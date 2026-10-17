@@ -18,7 +18,7 @@ Try: open the app, then Settings and the new chat dialog. On the phone, add to h
 ## 2. Home and recipes
 
 A Home tab opens first in a new chat. It greets you, shows a setup checklist (Figma token, Figma tools in Claude,
-Chrome, design system profile) with a button for each missing step, and lists eleven recipes in three groups:
+Chrome, design system profile) with a button for each missing step, and lists recipes in three groups (fifteen now, see section 17):
 
 - Make: Design from a brief, Sketch directions, Screenshot to design, Flow map
 - Improve: Missing states, Responsive variants, Copy pass, Design crit, Audit
@@ -140,3 +140,16 @@ Try: make a recipe "Dark mode pass" and click it.
 - Uploads are checked by their bytes, request bodies are capped at 1 MB, rules at 20 KB.
 - The sample chat is read-only on every path (steer, plan changes, commands), not only new messages.
 - Edited house rules now reach open chats on the next message.
+
+## 17. More recipes and the build check
+
+New recipes: Accessibility notes (focus order, headings, labels as annotations next to the frames), Localization
+stress test (copies with 40% longer text, then lists what breaks), Dark mode pass (dark copies via variable modes),
+Frame to code (React and CSS using your tokens, saved to the chat folder), Build check.
+
+Build check (`/buildcheck <url> <frame link>`, Review tab, Build view): DesignView opens the URL in a hidden Chrome
+tab at the frame's width, takes a full-page screenshot, renders the Figma frame, and one Sonnet call lists the
+differences with a match score. Slider or side by side, and "Send diffs to engineer" copies a markdown checklist.
+Not tried against a real page yet, since it needs a Figma file and spends a few cents.
+
+README.md is rewritten to cover all of this.
