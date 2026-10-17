@@ -217,3 +217,5 @@
   .empty-actions { align-self: stretch; }
   .empty-actions button { width: 100%; min-height: 44px; }
 }
+
+.sketch-canvas .HintViewer { display: none; }

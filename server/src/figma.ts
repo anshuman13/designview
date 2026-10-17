@@ -49,12 +49,12 @@ export async function fileOutline(key: string): Promise<Outline> {
 
 const imageCache = new Map<string, { at: number; urls: Record<string, string | null> }>();
 
-export async function images(key: string, ids: string[], scale = 0.5, format: 'png' | 'jpg' = 'png', version?: string) {
+export async function images(key: string, ids: string[], scale = 0.5, format: 'png' | 'jpg' = 'png', version?: string, fresh = false) {
   const want = [...new Set(ids)].slice(0, 100);
   if (!want.length || key === SAMPLE_KEY) return {};
   const cacheKey = `${key}:${scale}:${format}:${version ?? ''}:${want.join(',')}`;
   const hit = imageCache.get(cacheKey);
-  if (hit && Date.now() - hit.at < 10 * 60_000) return hit.urls;
+  if (hit && !fresh && Date.now() - hit.at < 10 * 60_000) return hit.urls;
   const r = await figmaGet<{ images: Record<string, string | null> }>(`/images/${key}?ids=${encodeURIComponent(want.join(','))}&scale=${scale}&format=${format}${version ? `&version=${encodeURIComponent(version)}` : ''}`);
   imageCache.set(cacheKey, { at: Date.now(), urls: r.images });
   return r.images;

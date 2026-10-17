@@ -282,7 +282,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/figma/files') return json(await projectFiles(url.searchParams.get('project') ?? ''));
     if (url.pathname === '/api/figma/folders') return json((await chatFolders()).filter((f) => f.figma).map((f) => ({ cwd: f.dir, ...f.figma })));
     if (url.pathname === '/api/figma/outline') return json(await fileOutline(needFigma().key));
-    if (url.pathname === '/api/figma/thumbs') return json(await images(needFigma().key, (url.searchParams.get('ids') ?? '').split(',').filter(Boolean), 0.3));
+    if (url.pathname === '/api/figma/thumbs') return json(await images(needFigma().key, (url.searchParams.get('ids') ?? '').split(',').filter(Boolean), 0.3, 'png', undefined, url.searchParams.has('r')));
     if (url.pathname === '/api/figma/versions') return json(await versions(needFigma().key));
     if (url.pathname === '/api/figma/render') return json(await images(needFigma().key, (url.searchParams.get('ids') ?? '').split(',').filter(Boolean), 1, 'png', url.searchParams.get('version') || undefined));
     if (url.pathname === '/api/figma/comments/reply' && req.method === 'POST') {

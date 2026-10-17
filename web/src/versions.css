@@ -39,3 +39,4 @@
   .ch-chip, .ch-item { min-height: 44px; }
   .ch-side { grid-template-columns: 1fr; }
 }
+.ch-stage.ch-slider { max-width: 720px; width: 100%; align-self: center; }

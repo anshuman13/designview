@@ -7,7 +7,7 @@ import { FlowBar } from './FlowBar';
 import { ReadAloud } from './Voice';
 import { touch } from '../touch';
 import { useThumbs } from '../useThumbs';
-import { showNode } from './Files';
+import { showNode, insertPrompt } from './Files';
 import { Transcript } from './Transcript';
 import { COMPACT_AT, type ChatEvent } from '../../../shared/protocol';
 
@@ -75,6 +75,8 @@ function handBack(text: string) {
 
 const SHOWN_PROMPTS = 3;
 
+const SUGGESTIONS = ['A notifications settings page with email and push toggles', 'An empty state for a search with no results', 'Onboarding in three steps for a budgeting app', 'A pricing page with three plans and a FAQ'];
+
 export function Brief() {
   const events = useStore((s) => s.events);
   const status = useStore((s) => s.status);
@@ -130,7 +132,15 @@ export function Brief() {
         </div>
         {full ? <Transcript /> : (
           <ol className="timeline">
-            {moments.length === 0 && <li className="tl-empty">Describe what you want to design. Your messages, Claude's progress and its replies show up here.</li>}
+            {moments.length === 0 && (
+              <li className="tl-welcome">
+                <h2>What are we designing?</h2>
+                <p>Claude plans with Opus, then sketches, designs in Figma and reviews with Sonnet.</p>
+                <div className="tl-chips">
+                  {SUGGESTIONS.map((s) => <button key={s} onClick={() => insertPrompt(s)}>{s}</button>)}
+                </div>
+              </li>
+            )}
             {shown.map((m, i) => <MomentRow key={m.id} m={m} thumb={m.nodes && withNodes.includes(m) ? thumb : undefined} sub={m.kind !== 'you' && shown.slice(0, i).some((x) => x.kind === 'you')} />)}
           </ol>
         )}
