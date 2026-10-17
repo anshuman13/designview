@@ -157,7 +157,7 @@ function Card({ row, selected, onClick }: { row: Row; selected: boolean; onClick
         {row.type && <span className="mcp-tag">{row.type}</span>}
         {row.live && <span className="mcp-tag live" title="Loaded in this chat">chat</span>}
       </div>
-      <div className="mcp-card-cmd mono" title={row.command}>{url ? row.command?.replace(/^https?:\/\//, '') : row.command ?? '—'}</div>
+      <div className="mcp-card-cmd mono" title={row.command}>{url ? row.command?.replace(/^https?:\/\//, '') : row.command ?? '-'}</div>
       <div className="mcp-card-foot">
         <span className={`s ${tone}`}>{label}</span>
         {row.status === 'connected' && row.tools && <span>{row.tools.length} tools</span>}
