@@ -1,0 +1,142 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { cp, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { parseFigmaUrl, type FigmaFile } from '../../shared/design.js';
+import { CHATS_ROOT, settings } from './settings.js';
+
+const API = 'https://api.figma.com/v1';
+const SKILLS = fileURLToPath(new URL('../../skills', import.meta.url));
+
+export class FigmaError extends Error {
+  constructor(message: string, public status = 400) {
+    super(message);
+  }
+}
+
+export async function figmaGet<T = any>(route: string, init: RequestInit = {}): Promise<T> {
+  const { figmaToken } = await settings();
+  if (!figmaToken) throw new FigmaError('Add a Figma personal access token in Settings first', 412);
+  const res = await fetch(`${API}${route}`, { ...init, headers: { 'X-Figma-Token': figmaToken, 'content-type': 'application/json', ...init.headers } });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    const why = body?.err ?? body?.message ?? res.statusText;
+    if (res.status === 403) throw new FigmaError(`Figma refused the request (${why}). Check the token and its scopes.`, 403);
+    if (res.status === 404) throw new FigmaError('Figma file not found, or the token cannot open it', 404);
+    if (res.status === 429) throw new FigmaError('Figma rate limit reached, try again in a minute', 429);
+    throw new FigmaError(`Figma API error ${res.status}: ${why}`, res.status);
+  }
+  return body as T;
+}
+
+export type FrameInfo = { id: string; name: string; page: string; type: string; w: number; h: number };
+
+export type Outline = { name: string; lastModified: string; thumbnail: string; pages: Array<{ id: string; name: string; frames: FrameInfo[] }> };
+
+export async function fileOutline(key: string): Promise<Outline> {
+  const f = await figmaGet<any>(`/files/${key}?depth=2`);
+  const pages = (f.document?.children ?? []).map((p: any) => ({
+    id: p.id as string,
+    name: p.name as string,
+    frames: (p.children ?? [])
+      .filter((n: any) => ['FRAME', 'COMPONENT', 'COMPONENT_SET', 'SECTION'].includes(n.type))
+      .map((n: any): FrameInfo => ({ id: n.id, name: n.name, page: p.name, type: n.type, w: Math.round(n.absoluteBoundingBox?.width ?? 0), h: Math.round(n.absoluteBoundingBox?.height ?? 0) })),
+  }));
+  return { name: f.name as string, lastModified: f.lastModified as string, thumbnail: f.thumbnailUrl as string, pages };
+}
+
+const imageCache = new Map<string, { at: number; urls: Record<string, string | null> }>();
+
+export async function images(key: string, ids: string[], scale = 0.5, format: 'png' | 'jpg' = 'png') {
+  const want = [...new Set(ids)].slice(0, 100);
+  if (!want.length) return {};
+  const cacheKey = `${key}:${scale}:${format}:${want.join(',')}`;
+  const hit = imageCache.get(cacheKey);
+  if (hit && Date.now() - hit.at < 10 * 60_000) return hit.urls;
+  const r = await figmaGet<{ images: Record<string, string | null> }>(`/images/${key}?ids=${encodeURIComponent(want.join(','))}&scale=${scale}&format=${format}`);
+  imageCache.set(cacheKey, { at: Date.now(), urls: r.images });
+  return r.images;
+}
+
+export async function nodes(key: string, ids: string[]) {
+  return figmaGet<{ name: string; nodes: Record<string, { document: any; components: Record<string, any>; componentSets?: Record<string, any>; styles: Record<string, any> } | null> }>(
+    `/files/${key}/nodes?ids=${encodeURIComponent(ids.join(','))}`,
+  );
+}
+
+export async function postComment(key: string, message: string, nodeId?: string) {
+  const body: Record<string, unknown> = { message };
+  if (nodeId) body.client_meta = { node_id: nodeId, node_offset: { x: 0, y: 0 } };
+  return figmaGet(`/files/${key}/comments`, { method: 'POST', body: JSON.stringify(body) });
+}
+
+export async function teamProjects(teamId: string) {
+  return (await figmaGet<{ projects: Array<{ id: string; name: string }> }>(`/teams/${teamId}/projects`)).projects;
+}
+
+export async function projectFiles(projectId: string) {
+  return (await figmaGet<{ files: Array<{ key: string; name: string; thumbnail_url: string; last_modified: string }> }>(`/projects/${projectId}/files`)).files;
+}
+
+export async function me() {
+  return figmaGet<{ id: string; handle: string; email: string; img_url: string }>('/me');
+}
+
+export async function download(url: string, file: string) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+  await writeFile(file, Buffer.from(await res.arrayBuffer()));
+}
+
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'file';
+
+export const isChatFolder = (dir: string) => path.resolve(dir).startsWith(path.resolve(CHATS_ROOT) + path.sep);
+
+export async function readFigma(dir: string): Promise<FigmaFile | null> {
+  return readFile(path.join(dir, 'figma.json'), 'utf8').then(JSON.parse).catch(() => null);
+}
+
+export async function chatFolders() {
+  const names = await readdir(CHATS_ROOT).catch(() => [] as string[]);
+  const out: Array<{ dir: string; figma: FigmaFile | null }> = [];
+  for (const n of names) {
+    const dir = path.join(CHATS_ROOT, n);
+    if (!(await stat(dir).then((s) => s.isDirectory()).catch(() => false))) continue;
+    out.push({ dir, figma: await readFigma(dir) });
+  }
+  return out;
+}
+
+async function installSkills(dir: string) {
+  await mkdir(path.join(dir, '.claude'), { recursive: true });
+  await cp(SKILLS, path.join(dir, '.claude', 'skills'), { recursive: true, force: true }).catch((err) => console.error('skills:', err.message));
+}
+
+export async function scratchFolder() {
+  const dir = path.join(CHATS_ROOT, 'scratch');
+  await mkdir(dir, { recursive: true });
+  await installSkills(dir);
+  return dir;
+}
+
+export async function folderFor(url: string) {
+  const parsed = parseFigmaUrl(url);
+  if (!parsed) throw new FigmaError('That is not a Figma file link. Copy the link from the Share button or the address bar.');
+  const existing = (await chatFolders()).find((f) => f.figma?.key === parsed.key);
+  if (existing) {
+    await installSkills(existing.dir);
+    return existing.dir;
+  }
+  let name = 'Untitled';
+  try {
+    name = (await figmaGet<{ name: string }>(`/files/${parsed.key}?depth=1`)).name;
+  } catch (err) {
+    if (err instanceof FigmaError && err.status === 412) throw err;
+    throw new FigmaError(`Could not open the file: ${(err as Error).message}`);
+  }
+  const dir = path.join(CHATS_ROOT, `${slug(name)}-${parsed.key.slice(0, 6)}`);
+  await mkdir(dir, { recursive: true });
+  const figma: FigmaFile = { key: parsed.key, name, url: `https://www.figma.com/design/${parsed.key}` };
+  await writeFile(path.join(dir, 'figma.json'), JSON.stringify(figma, null, 2));
+  await installSkills(dir);
+  return dir;
+}

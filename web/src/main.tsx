@@ -1,0 +1,11 @@
+import { createRoot } from 'react-dom/client';
+import { App } from './App';
+import './styles.css';
+import './sidebar.css';
+import './connect.css';
+import './mobile.css';
+import { touch } from './touch';
+
+if (touch()) window.addEventListener('focusout', () => window.scrollTo(0, 0));
+
+createRoot(document.getElementById('root')!).render(<App />);

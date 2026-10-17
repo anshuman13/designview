@@ -1,0 +1,116 @@
+import { useEffect, useState } from 'react';
+import { getJson, postJson, send, setUi, useStore } from '../store';
+import { Icon } from '../Icon';
+import { figmaNodeUrl } from '../../../shared/design';
+
+type Frame = { id: string; name: string; page: string; type: string; w: number; h: number };
+type Outline = { name: string; pages: Array<{ id: string; name: string; frames: Frame[] }> };
+type Project = { id: string; name: string };
+type FileRow = { key: string; name: string; thumbnail_url: string; last_modified: string };
+
+export const insertPrompt = (text: string) => window.dispatchEvent(new CustomEvent('designview:insert', { detail: text }));
+export const showNode = (nodeId: string) => postJson('/api/figma/focus', { nodeId }).catch(() => {});
+
+export function Files() {
+  const figma = useStore((s) => s.session.figma);
+  const focus = useStore((s) => s.ui.focus);
+  const [outline, setOutline] = useState<Outline | null>(null);
+  const [thumbs, setThumbs] = useState<Record<string, string | null>>({});
+  const [error, setError] = useState('');
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setOutline(null);
+    setError('');
+    if (!figma) return;
+    getJson<Outline>('/api/figma/outline')
+      .then((o) => {
+        setOutline(o);
+        const ids = o.pages.flatMap((p) => p.frames.slice(0, 12).map((f) => f.id)).slice(0, 60);
+        if (ids.length) getJson<Record<string, string | null>>(`/api/figma/thumbs?ids=${encodeURIComponent(ids.join(','))}`).then(setThumbs).catch(() => {});
+      })
+      .catch((e) => setError(e.message));
+  }, [figma?.key]);
+
+  return (
+    <div className="side-scroll">
+      {figma ? (
+        <section className="side-section">
+          <div className="file-head">
+            <div className="file-name">{figma.name}</div>
+            <div className="file-acts">
+              <button onClick={() => postJson('/api/figma/show', {}).catch((e) => setError(e.message))}><Icon name="link-external" small /> Show in Chrome</button>
+            </div>
+          </div>
+          {error && <div className="error-text">{error}{/Settings/.test(error) && <> <button className="link" onClick={() => window.dispatchEvent(new CustomEvent('designview:command', { detail: { id: 'page:settings' } }))}>Open Settings</button></>}</div>}
+          {!outline && !error && <div className="hint">Loading frames…</div>}
+          {outline?.pages.map((p) => (
+            <div key={p.id} className="page-group">
+              <button className="page-row" onClick={() => setOpen((o) => ({ ...o, [p.id]: !(o[p.id] ?? p.name !== 'Sketch') }))}>
+                <Icon name={(open[p.id] ?? p.name !== 'Sketch') ? 'chevron-down' : 'chevron-right'} small /> {p.name} <span className="count">{p.frames.length}</span>
+              </button>
+              {(open[p.id] ?? p.name !== 'Sketch') && (
+                <ul className="frame-list">
+                  {p.frames.map((f) => (
+                    <li key={f.id} className={focus === f.id ? 'focused' : ''}>
+                      <button className="frame" title={`${f.name} · ${f.w}×${f.h}\nShow in Figma`} onClick={() => showNode(f.id)}>
+                        <span className="thumb">{thumbs[f.id] ? <img src={thumbs[f.id]!} alt="" loading="lazy" /> : <Icon name="symbol-misc" small />}</span>
+                        <span className="frame-name">{f.name}</span>
+                      </button>
+                      <button className="icon-btn" title="Add to the prompt" onClick={() => insertPrompt(`${f.name} (${figmaNodeUrl(figma.key, f.id)})`)}><Icon name="add" small /></button>
+                    </li>
+                  ))}
+                  {!p.frames.length && <li className="hint">No frames on this page</li>}
+                </ul>
+              )}
+            </div>
+          ))}
+        </section>
+      ) : (
+        <section className="side-section">
+          <p className="hint">This chat has no Figma file.</p>
+          <button className="primary" onClick={() => setUi({ repoPicker: true })}>Start a chat from a Figma link</button>
+        </section>
+      )}
+      <TeamFiles />
+    </div>
+  );
+}
+
+function TeamFiles() {
+  const [projects, setProjects] = useState<Project[] | null>(null);
+  const [files, setFiles] = useState<Record<string, FileRow[]>>({});
+  const [open, setOpen] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    getJson<Project[]>('/api/figma/projects').then(setProjects).catch((e) => setError(e.message));
+  }, []);
+  const toggle = (id: string) => {
+    setOpen((o) => (o === id ? null : id));
+    if (!files[id]) getJson<FileRow[]>(`/api/figma/files?project=${id}`).then((f) => setFiles((x) => ({ ...x, [id]: f }))).catch((e) => setError(e.message));
+  };
+  if (error || !projects?.length) return null;
+  return (
+    <section className="side-section">
+      <div className="side-label">Team files</div>
+      {projects.map((p) => (
+        <div key={p.id}>
+          <button className="page-row" onClick={() => toggle(p.id)}><Icon name={open === p.id ? 'chevron-down' : 'chevron-right'} small /> {p.name}</button>
+          {open === p.id && (
+            <ul className="frame-list">
+              {(files[p.id] ?? []).map((f) => (
+                <li key={f.key}>
+                  <button className="frame" title="Start a chat on this file" onClick={() => send({ type: 'new_chat', url: `https://www.figma.com/design/${f.key}` })}>
+                    <span className="thumb">{f.thumbnail_url ? <img src={f.thumbnail_url} alt="" loading="lazy" /> : <Icon name="file-media" small />}</span>
+                    <span className="frame-name">{f.name}</span>
+                  </button>
+                </li>
+              ))}
+              {!files[p.id] && <li className="hint">Loading…</li>}
+            </ul>
+          )}
+        </div>
+      ))}
+    </section>
+  );
+}

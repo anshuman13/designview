@@ -1,0 +1,152 @@
+export const AREAS = ['color', 'typography', 'spacing', 'components', 'accessibility', 'brief'] as const;
+export type Area = (typeof AREAS)[number];
+
+export const AREA_NAMES: Record<Area, string> = {
+  color: 'Color',
+  typography: 'Typography',
+  spacing: 'Spacing and layout',
+  components: 'Components',
+  accessibility: 'Accessibility',
+  brief: 'Brief',
+};
+
+export const PRESETS = ['check', 'quick', 'focused', 'full'] as const;
+export type ReviewPreset = (typeof PRESETS)[number];
+
+export const PRESET_INFO: Record<ReviewPreset, { label: string; detail: string; fixRounds: number }> = {
+  check: { label: 'Check', detail: 'Design system check only, no model calls', fixRounds: 1 },
+  quick: { label: 'Quick', detail: 'Check plus one reviewer covering all areas', fixRounds: 1 },
+  focused: { label: 'Focused', detail: 'Check plus one reviewer per area you tick', fixRounds: 1 },
+  full: { label: 'Full', detail: 'Check plus all six area reviewers in parallel', fixRounds: 2 },
+};
+
+export const MODELS = { plan: 'claude-opus-5-5', work: 'claude-sonnet-5-5' } as const;
+
+export type FlowPhase = 'plan' | 'sketch' | 'pick' | 'system' | 'design' | 'review' | 'fix' | 'done' | 'stopped';
+export type FlowKind = 'design' | 'sketch';
+
+export type FlowState = {
+  on: boolean;
+  kind: FlowKind;
+  phase: FlowPhase | null;
+  round: number;
+  preset: ReviewPreset;
+  areas: Area[];
+  stopAfterSketch: boolean;
+  tokens: number;
+};
+
+export type Severity = 'blocking' | 'major' | 'minor';
+
+export type Finding = {
+  id: string;
+  area: Area | 'check';
+  node: string;
+  nodeName?: string;
+  severity: Severity;
+  rule: string;
+  fix: string;
+};
+
+export type AreaResult = {
+  area: Area | 'all';
+  pass: boolean;
+  summary: string;
+  findings: Finding[];
+  tokens: number;
+  costUsd: number;
+  error?: string;
+};
+
+export type ReviewRun = {
+  id: string;
+  kind: 'review' | 'audit' | 'verify';
+  at: number;
+  round: number;
+  preset: ReviewPreset;
+  frames: string[];
+  check: Finding[];
+  checkError?: string;
+  results: AreaResult[];
+  tokens: number;
+  costUsd: number;
+};
+
+export type ReviewDoc = { runs: ReviewRun[]; posted?: string[] };
+
+export const SKETCH_ITEMS = ['box', 'text', 'heading', 'button', 'input', 'image', 'icon', 'line', 'circle', 'note'] as const;
+export type SketchItemType = (typeof SKETCH_ITEMS)[number];
+export type SketchItem = { t: SketchItemType; x: number; y: number; w: number; h: number; label?: string };
+export type SketchDirection = { id: string; name: string; rationale: string; w: number; h: number; items: SketchItem[] };
+export type SketchScreen = { id: string; name: string; directions: SketchDirection[]; chosen?: string; chosenBy?: 'claude' | 'designer' };
+export type SketchDoc = { screens: SketchScreen[] };
+
+export type DesignFrame = { screen: string; state: string; nodeId: string; name?: string };
+export type DesignDoc = { page?: string; frames: DesignFrame[] };
+
+export type DsColor = { name: string; value: string; variable?: string };
+export type DsText = { name: string; family?: string; size?: number; weight?: number | string; lineHeight?: number | string };
+export type DsComponent = { name: string; key?: string; variants?: string[]; description?: string };
+export type DesignSystem = {
+  builtAt: number;
+  libraries: string[];
+  colors: DsColor[];
+  text: DsText[];
+  spacing: number[];
+  radius: number[];
+  components: DsComponent[];
+  rules: string[];
+};
+
+export type FigmaFile = { key: string; name: string; url: string };
+
+export type Settings = {
+  figmaToken: string;
+  teamId: string;
+  stopAfterSketch: boolean;
+  preset: ReviewPreset;
+  areas: Area[];
+  askBeforeEdit: boolean;
+  followClaude: boolean;
+  devTools: boolean;
+};
+
+export const DEFAULT_SETTINGS: Settings = {
+  figmaToken: '',
+  teamId: '',
+  stopAfterSketch: false,
+  preset: 'quick',
+  areas: ['components', 'accessibility', 'brief'],
+  askBeforeEdit: false,
+  followClaude: true,
+  devTools: false,
+};
+
+export const flowOff = (s: Pick<Settings, 'preset' | 'areas' | 'stopAfterSketch'> = DEFAULT_SETTINGS): FlowState => ({
+  on: true,
+  kind: 'design',
+  phase: null,
+  round: 0,
+  preset: s.preset,
+  areas: s.areas,
+  stopAfterSketch: s.stopAfterSketch,
+  tokens: 0,
+});
+
+export const FLOW_ACTIVE: FlowPhase[] = ['plan', 'sketch', 'system', 'design', 'review', 'fix'];
+
+export function parseFigmaUrl(input: string): { key: string; nodeId: string | null } | null {
+  const m = /figma\.com\/(?:design|file|proto|board|make)\/([A-Za-z0-9]{10,})/.exec(input);
+  if (!m) return null;
+  const node = /[?&]node-id=([0-9]+[-:][0-9]+)/.exec(input);
+  return { key: m[1], nodeId: node ? node[1].replace('-', ':') : null };
+}
+
+export function nodeIdsIn(text: string): string[] {
+  const ids = new Set<string>();
+  for (const m of text.matchAll(/node-id=([0-9]+[-:][0-9]+)/g)) ids.add(m[1].replace('-', ':'));
+  for (const m of text.matchAll(/(?:^|\s)([0-9]+:[0-9]+)(?=\s|$|,)/g)) ids.add(m[1]);
+  return [...ids];
+}
+
+export const figmaNodeUrl = (key: string, nodeId: string) => `https://www.figma.com/design/${key}?node-id=${nodeId.replace(':', '-')}`;
