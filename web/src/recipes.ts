@@ -1,6 +1,7 @@
-import { getJson, getState, send } from './store';
+import { useEffect, useState } from 'react';
+import { getJson, getState, postJson, send } from './store';
 import { insertPrompt } from './panes/Files';
-import { RECIPES, recipePrompt, type Recipe } from '../../shared/recipes';
+import { RECIPES, recipePrompt, toRecipe, type CustomRecipe, type Recipe } from '../../shared/recipes';
 import { figmaNodeUrl } from '../../shared/design';
 
 type Outline = { pages: Array<{ frames: Array<{ id: string; name: string }> }> };
@@ -21,7 +22,29 @@ export async function runRecipe(recipe: Recipe) {
   insertPrompt(recipePrompt(recipe, frames).trimEnd());
 }
 
+let custom: CustomRecipe[] = [];
+
+const publish = (list: CustomRecipe[]) => {
+  custom = list;
+  window.dispatchEvent(new Event('designview:recipes'));
+};
+
+export const loadCustomRecipes = () => getJson<CustomRecipe[]>('/api/recipes').then(publish).catch(() => {});
+export const getCustomRecipes = () => custom;
+export const saveCustomRecipes = (list: CustomRecipe[]) => postJson<CustomRecipe[]>('/api/recipes', list).then(publish);
+
+export function useCustomRecipes() {
+  const [list, setList] = useState(custom);
+  useEffect(() => {
+    const sync = () => setList(custom);
+    window.addEventListener('designview:recipes', sync);
+    void loadCustomRecipes();
+    return () => window.removeEventListener('designview:recipes', sync);
+  }, []);
+  return list;
+}
+
 export const runRecipeById = (id: string) => {
-  const r = RECIPES.find((x) => x.id === id);
+  const r = RECIPES.find((x) => x.id === id) ?? custom.map(toRecipe).find((x) => x.id === id);
   if (r) void runRecipe(r);
 };

@@ -10,6 +10,10 @@ export type Recipe = {
   prompt: string;
 };
 
+export type CustomRecipe = { id: string; title: string; blurb: string; prompt: string; group: RecipeGroup };
+
+export const toRecipe = (c: CustomRecipe): Recipe => ({ ...c, icon: 'bookmark', needsFrames: c.prompt.includes('{frames}') });
+
 export const RECIPE_GROUPS: { id: RecipeGroup; label: string }[] = [
   { id: 'make', label: 'Make' },
   { id: 'improve', label: 'Improve' },
