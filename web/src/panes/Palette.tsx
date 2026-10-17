@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getState, send, setUi, useStore } from '../store';
 import { toggleNotify } from '../notify';
+import { runRecipeById } from '../recipes';
+import { RECIPES } from '../../../shared/recipes';
 import '../palette.css';
 
 export type Command = { id: string; label: string; key?: string };
@@ -26,6 +28,7 @@ export function buildCommands(_models: { value: string; displayName: string }[] 
     { id: 'review', label: 'Design: Review the Design' },
     { id: 'audit', label: 'Design: Audit the File' },
     { id: 'system', label: 'Design: Rebuild the Design System Profile' },
+    ...RECIPES.map((r) => ({ id: `recipe:${r.id}`, label: `Recipe: ${r.title}` })),
     { id: 'compact', label: 'Chat: Compact Context' },
     { id: 'stop', label: 'Chat: Stop Claude' },
     { id: 'notify', label: 'Preferences: Toggle Notifications' },
@@ -97,8 +100,7 @@ function loadRecent(): string[] {
 function perform(id: string) {
   const [kind, ...rest] = id.split(':');
   const arg = rest.join(':');
-  void kind;
-  void arg;
+  if (kind === 'recipe') runRecipeById(arg);
   if (id === 'compact') send({ type: 'prompt', text: '/compact' });
   else if (id === 'design') send({ type: 'set_flow', patch: { on: !getState().session.flow.on } });
   else if (id === 'review') send({ type: 'prompt', text: '/review' });

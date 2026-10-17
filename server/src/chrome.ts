@@ -415,6 +415,8 @@ async function input(m: any, ws: WebSocket) {
   }
 }
 
+export const chromeStatus = () => ({ state, reason });
+
 export function openChrome(ws: WebSocket, origin: string | undefined) {
   if (origin) selfOrigins.add(origin);
   viewers.add(ws);

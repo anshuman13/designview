@@ -13,6 +13,7 @@ import { DesignSystem } from './panes/DesignSystem';
 import { Sketch } from './panes/Sketch';
 import { Review } from './panes/Review';
 import { Settings } from './panes/Settings';
+import { Home } from './panes/Home';
 import { Icon } from './Icon';
 import { ConnectPopover } from './ConnectPopover';
 import { McpItem } from './panes/McpStatus';
@@ -21,8 +22,8 @@ import './page.css';
 import './design.css';
 
 type View = 'files' | 'chats' | 'system' | 'explorer';
-type Center = 'figma' | 'sketch' | 'review' | 'preview' | 'code' | 'settings';
-type Tab = 'chat' | 'figma' | 'sketch' | 'review' | 'more';
+type Center = 'home' | 'figma' | 'sketch' | 'review' | 'preview' | 'code' | 'settings';
+type Tab = 'chat' | 'home' | 'figma' | 'sketch' | 'review' | 'more';
 
 const VIEWS: { id: View; icon: string; title: string; dev?: boolean }[] = [
   { id: 'files', icon: 'file-media', title: 'Files' },
@@ -32,6 +33,7 @@ const VIEWS: { id: View; icon: string; title: string; dev?: boolean }[] = [
 ];
 
 const CENTER: { id: Center; icon: string; label: string; dev?: boolean }[] = [
+  { id: 'home', icon: 'home', label: 'Home' },
   { id: 'figma', icon: 'browser', label: 'Figma' },
   { id: 'sketch', icon: 'edit', label: 'Sketch' },
   { id: 'review', icon: 'checklist', label: 'Review' },
@@ -82,9 +84,10 @@ export function App() {
   const repoPicker = useStore((s) => s.ui.repoPicker);
   const session = useStore((s) => s.session);
   const status = useStore((s) => s.status);
+  const events = useStore((s) => s.events);
   const phase = useStore((s) => s.session.flow.phase);
   const [tab, setTab] = useState<Tab>('chat');
-  const [center, setCenter] = useState<Center>('figma');
+  const [center, setCenter] = useState<Center>('home');
   const [sidebar, setSidebar] = useState(true);
   const [view, setView] = useState<View>('files');
   const [phone, setPhone] = useState(false);
@@ -121,12 +124,17 @@ export function App() {
   };
   const open = (c: Center) => {
     setCenter(c);
-    if (narrow()) setTab(c === 'figma' || c === 'sketch' || c === 'review' ? c : 'more');
+    if (narrow()) setTab(c === 'home' || c === 'figma' || c === 'sketch' || c === 'review' ? c : 'more');
   };
 
   useEffect(() => {
     if (pendingCount > 0) setTab('chat');
   }, [pendingCount]);
+
+  const empty = !session.figma || session.id === '' || events.length === 0;
+  useEffect(() => {
+    if (empty) setCenter('home');
+  }, [session.id]);
 
   useEffect(() => {
     const next = phase ? PHASE_TAB[phase] : undefined;
@@ -159,6 +167,7 @@ export function App() {
       if (kind === 'view') { setView(arg as View); setSidebar(true); if (narrow()) setTab('more'); }
       else if (kind === 'page') open(arg as Center);
       else if (kind === 'phone') setPhone((v) => !v);
+      else if (kind === 'tab') setTab(arg as Tab);
     };
     window.addEventListener('designview:command', onCommand);
     return () => window.removeEventListener('designview:command', onCommand);
@@ -168,7 +177,7 @@ export function App() {
   const title = figma?.name ?? 'No Figma file';
   const centers = CENTER.filter((c) => !c.dev || dev);
   const views = VIEWS.filter((v) => !v.dev || dev);
-  const shownCenter = narrow() && (tab === 'figma' || tab === 'sketch' || tab === 'review') ? tab : center;
+  const shownCenter = narrow() && (tab === 'home' || tab === 'figma' || tab === 'sketch' || tab === 'review') ? tab : center;
 
   return (
     <div className="workbench" data-tab={tab} data-sidebar={sidebar} style={{ '--chat-w': `${chatW}px` } as React.CSSProperties}>
@@ -219,6 +228,7 @@ export function App() {
             ))}
             {center === 'settings' && <button className="tab active"><Icon name="settings-gear" small /> Settings</button>}
           </div>
+          <div className={`editor ${shownCenter === 'home' ? 'shown' : ''}`}>{shownCenter === 'home' && <Home />}</div>
           <div className={`editor browser ${shownCenter === 'figma' ? 'shown' : ''}`}>{shownCenter === 'figma' && <BrowserPane />}</div>
           <div className={`editor ${shownCenter === 'sketch' ? 'shown' : ''}`}>{shownCenter === 'sketch' && <Sketch />}</div>
           <div className={`editor ${shownCenter === 'review' ? 'shown' : ''}`}>{shownCenter === 'review' && <Review />}</div>
@@ -241,7 +251,7 @@ export function App() {
       </div>
 
       <nav className="tabbar mobile-only">
-        {([['chat', 'comment-discussion', 'Timeline'], ['figma', 'browser', 'Figma'], ['sketch', 'edit', 'Sketch'], ['review', 'checklist', 'Review'], ['more', 'ellipsis', 'More']] as const).map(([id, icon, label]) => (
+        {([['chat', 'comment-discussion', 'Timeline'], ['home', 'home', 'Home'], ['figma', 'browser', 'Figma'], ['sketch', 'edit', 'Sketch'], ['review', 'checklist', 'Review'], ['more', 'ellipsis', 'More']] as const).map(([id, icon, label]) => (
           <button key={id} className={tab === id ? 'active' : ''} onClick={() => { setTab(id); if (id !== 'chat' && id !== 'more') setCenter(id); }}>
             <Icon name={icon} />
             <span>{label}</span>
