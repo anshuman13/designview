@@ -6,6 +6,7 @@ import './connect.css';
 import './mobile.css';
 import './spend.css';
 import './crit.css';
+import './buildcheck.css';
 import './handoff.css';
 import './comments.css';
 import './shortcuts.css';

@@ -6,9 +6,10 @@ import { showNode, insertPrompt } from './Files';
 import { Empty, ReviewArt } from './Empty';
 import { Copy, Crit } from './Crit';
 import { Changes } from './Changes';
+import { BuildCheck } from './BuildCheck';
 
 const SEV: Record<Finding['severity'], string> = { blocking: 'Blocking', major: 'Major', minor: 'Minor' };
-type Tab = 'review' | 'crit' | 'copy' | 'changes';
+type Tab = 'review' | 'crit' | 'copy' | 'changes' | 'build';
 
 export function Review() {
   const [tab, setTab] = useState<Tab>('review');
@@ -16,7 +17,7 @@ export function Review() {
     <div className="crit-wrap">
       <div className="crit-tabs">
         <div className="seg" role="radiogroup" aria-label="Review type">
-          {([['review', 'Review'], ['crit', 'Crit'], ['copy', 'Copy'], ['changes', 'Changes']] as const).map(([id, name]) => (
+          {([['review', 'Review'], ['crit', 'Crit'], ['copy', 'Copy'], ['changes', 'Changes'], ['build', 'Build']] as const).map(([id, name]) => (
             <button key={id} role="radio" aria-checked={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{name}</button>
           ))}
         </div>
@@ -27,6 +28,7 @@ export function Review() {
       {tab === 'crit' && <Crit />}
       {tab === 'copy' && <Copy />}
       {tab === 'changes' && <Changes />}
+      {tab === 'build' && <BuildCheck />}
     </div>
   );
 }

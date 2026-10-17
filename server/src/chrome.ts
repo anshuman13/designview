@@ -19,6 +19,7 @@ const calls = new Map<number, { resolve: (r: any) => void; reject: (e: Error) =>
 const tabs = new Map<string, Tab>();
 const viewers = new Set<WebSocket>();
 const selfOrigins = new Set<string>();
+const hidden = new Set<string>();
 let pinned: string | null = null;
 let watching: { target: string; session: string } | null = null;
 let watchSeq = 0;
@@ -173,7 +174,7 @@ function isSelf(url: string) {
 }
 
 function track(t: any, live: boolean) {
-  if (!isPage(t)) return;
+  if (!isPage(t) || hidden.has(t.targetId)) return;
   const prev = tabs.get(t.targetId);
   const moved = live && (!prev || prev.url !== t.url);
   tabs.set(t.targetId, { id: t.targetId, title: t.title, url: t.url, at: moved ? Date.now() : (prev?.at ?? 0) });
@@ -495,5 +496,38 @@ export async function focusFigma(fileKey: string, nodeId: string, navigate: bool
     return `failed: ${(err as Error).message}`;
   } finally {
     if (session && !own) void call('Target.detachFromTarget', { sessionId: session }).catch(() => {});
+  }
+}
+
+const MAX_SHOT_HEIGHT = 16000;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export async function screenshotUrl(url: string, width: number): Promise<Buffer> {
+  if (!cdp) await connect();
+  if (!cdp) throw new Error('Chrome is not connected. Open the Figma tab and press Connect Chrome.');
+  const { targetId } = await call('Target.createTarget', { url: 'about:blank', background: true, width, height: 900 });
+  hidden.add(targetId);
+  if (tabs.delete(targetId)) pick();
+  let session = '';
+  try {
+    session = (await call('Target.attachToTarget', { targetId, flatten: true })).sessionId as string;
+    await call('Page.enable', {}, session);
+    await call('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: false }, session);
+    const nav = await call('Page.navigate', { url }, session, 30000);
+    if (nav.errorText) throw new Error(`Could not open ${url}: ${nav.errorText}`);
+    for (let i = 0; i < 60; i++) {
+      const { result } = await call('Runtime.evaluate', { expression: 'document.readyState', returnByValue: true }, session, 5000);
+      if (result?.value === 'complete') break;
+      await sleep(500);
+    }
+    await sleep(1000);
+    const { cssContentSize: c } = await call('Page.getLayoutMetrics', {}, session);
+    const height = Math.min(MAX_SHOT_HEIGHT, Math.max(1, Math.ceil(c.height)));
+    const shot = await call('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip: { x: 0, y: 0, width, height, scale: 1 } }, session, 60000);
+    return Buffer.from(shot.data, 'base64');
+  } finally {
+    if (session) void call('Target.detachFromTarget', { sessionId: session }).catch(() => {});
+    await call('Target.closeTarget', { targetId }).catch(() => {});
+    setTimeout(() => hidden.delete(targetId), 5000);
   }
 }

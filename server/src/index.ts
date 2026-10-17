@@ -22,6 +22,7 @@ import { today } from './spend.js';
 import { publicSettings, saveSettings, settings } from './settings.js';
 import { addFigmaToClaude, figmaMcp } from './lean.js';
 import { pickDirection, readBoard, readSketch, writeBoard } from './sketch.js';
+import { readBuildChecks } from './buildcheck.js';
 import { copyApplyPrompt, readCopy, readCrit } from './crit.js';
 import { markPosted, readDesign, readReview } from './review.js';
 import { readProfile } from './profile.js';
@@ -318,6 +319,7 @@ const server = http.createServer(async (req, res) => {
       await markPosted(chat.cwd, chosen.map((x) => x.id));
       return json({ posted: chosen.length });
     }
+    if (url.pathname === '/api/buildcheck') return json({ runs: await readBuildChecks(chat.cwd) });
     if (url.pathname === '/api/crit') return json({ runs: await readCrit(chat.cwd) });
     if (url.pathname === '/api/copy/apply' && req.method === 'POST') {
       const { runId, nodeIds, edits } = await readJsonBody();

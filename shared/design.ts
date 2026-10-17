@@ -160,6 +160,16 @@ export type CritPoint = { kind: 'like' | 'concern' | 'idea'; text: string; nodeI
 export type CritPersona = { id: Persona; verdict: string; points: CritPoint[] };
 export type CritRun = { id: string; at: number; frames: string[]; personas: CritPersona[]; summary: string; tokens: number; costUsd: number };
 
+export const BUILD_KINDS = ['spacing', 'color', 'type', 'layout', 'content', 'missing', 'extra', 'state'] as const;
+export type BuildKind = (typeof BUILD_KINDS)[number];
+export type BuildDiff = { area: string; kind: BuildKind; severity: 'blocking' | 'major' | 'minor'; figma: string; site: string; fix: string; nodeId?: string };
+export type BuildRun = { id: string; at: number; url: string; frame: string; frameName: string; width: number; dir: string; summary: string; matchScore: number; diffs: BuildDiff[]; tokens: number; costUsd: number };
+
+export function buildChecklist(run: Pick<BuildRun, 'url' | 'frameName' | 'matchScore' | 'diffs'>) {
+  const lines = run.diffs.map((d) => `- [ ] **${d.severity}** (${d.kind}) ${d.area}: ${d.fix} Figma: ${d.figma}. Site: ${d.site}.${d.nodeId ? ` Node ${d.nodeId}.` : ''}`);
+  return [`Build check of ${run.url} against ${run.frameName}: ${run.matchScore}% match, ${run.diffs.length} ${run.diffs.length === 1 ? 'difference' : 'differences'}`, '', ...lines].join('\n');
+}
+
 export const TONES = ['friendly', 'neutral', 'formal'] as const;
 export type Tone = (typeof TONES)[number];
 export type CopyItem = { nodeId: string; before: string; after: string; reason: string };

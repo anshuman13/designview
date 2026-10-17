@@ -13,6 +13,7 @@ import { FIGMA_WRITE, figmaMcp, isFigmaTool } from './lean.js';
 import { boardNotes, readSketch, renderAll } from './sketch.js';
 import { buildProfile, readProfile } from './profile.js';
 import { parseTone, runCopy, runCrit } from './crit.js';
+import { parseBuildArg, runBuildCheck } from './buildcheck.js';
 import { failedAreas, readDesign, runReview, toFix } from './review.js';
 import { checkSummary } from './check.js';
 import { settings } from './settings.js';
@@ -180,6 +181,7 @@ export class AgentSession {
           { name: 'review', description: 'Review frames: /review [check|quick|focused|full] [frame links]' },
           { name: 'audit', description: 'Design system check across the whole file, no model calls' },
           { name: 'crit', description: 'Design crit from four viewpoints: /crit [frame links]' },
+          { name: 'buildcheck', description: 'Compare a live page with a frame: /buildcheck <url> [frame link]' },
           { name: 'copy', description: 'Copy pass: /copy [frame links] [tone:friendly|neutral|formal]' },
           { name: 'system', description: 'Rebuild the design system profile' },
           ...commands.filter((c) => c.name !== 'review').map((c) => ({ name: c.name, description: c.description })),
@@ -344,7 +346,7 @@ export class AgentSession {
     this.setFlow(next);
   }
 
-  private async command(cmd: 'design' | 'sketch' | 'review' | 'audit' | 'system' | 'crit' | 'copy', arg: string, raw: string) {
+  private async command(cmd: 'design' | 'sketch' | 'review' | 'audit' | 'system' | 'crit' | 'copy' | 'buildcheck', arg: string, raw: string) {
     if (this.sampleBlocked()) return;
     if (cmd === 'design' || cmd === 'sketch') {
       if (!arg) return this.system(`Describe what to ${cmd} after /${cmd}`);
@@ -365,6 +367,17 @@ export class AgentSession {
       this.recordBackground('review', run);
       this.system(`Audit done: ${run.check.length ? checkSummary(run.check) : 'no issues'} across ${frames.length} frames. See the Review tab.`);
     });
+    if (cmd === 'buildcheck') {
+      const parsed = parseBuildArg(arg);
+      if ('error' in parsed) return this.system(`/buildcheck: ${parsed.error}`);
+      const frame = parsed.frames[0] ?? (await readDesign(this.cwd))?.frames[0]?.nodeId;
+      if (!frame) return this.system('/buildcheck: paste a frame link after the address, or run /design first');
+      return this.background('Checking the build', async (signal) => {
+        const run = await runBuildCheck({ dir: this.cwd, fileKey: this.figma!.key, frame, url: parsed.url, width: parsed.width, signal, onProgress: (t) => this.setStatus(t) });
+        this.recordBackground('review', run);
+        this.system(`Build check done: ${run.matchScore}% match, ${run.diffs.length} differences · ${Math.round(run.tokens / 1000)}k tokens. See the Review tab.`);
+      });
+    }
     if (cmd === 'crit' || cmd === 'copy') {
       let frames = nodeIdsIn(arg);
       if (!frames.length) frames = (await readDesign(this.cwd))?.frames.map((f) => f.nodeId) ?? [];

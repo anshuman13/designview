@@ -161,6 +161,15 @@ export const RECIPES: Recipe[] = [
       'Make dark mode versions of {frames}: duplicate each one below the original on the DesignView page and switch it to the dark variable mode of our color collections. If a fill or stroke is not bound to a variable, bind it to the closest semantic variable first. List any color that has no dark value and any text that drops below 4.5:1 contrast.',
   },
   {
+    id: 'build-check',
+    title: 'Build check',
+    blurb: 'Compare a live page with its Figma frame and list what differs.',
+    icon: 'browser',
+    group: 'ship',
+    needsFrames: true,
+    prompt: '/buildcheck https:// {frames}',
+  },
+  {
     id: 'to-code',
     title: 'Frame to code',
     blurb: 'React and CSS for a frame, using your tokens, saved to the chat folder.',
