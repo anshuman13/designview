@@ -46,15 +46,34 @@ export async function fileOutline(key: string): Promise<Outline> {
 
 const imageCache = new Map<string, { at: number; urls: Record<string, string | null> }>();
 
-export async function images(key: string, ids: string[], scale = 0.5, format: 'png' | 'jpg' = 'png') {
+export async function images(key: string, ids: string[], scale = 0.5, format: 'png' | 'jpg' = 'png', version?: string) {
   const want = [...new Set(ids)].slice(0, 100);
   if (!want.length) return {};
-  const cacheKey = `${key}:${scale}:${format}:${want.join(',')}`;
+  const cacheKey = `${key}:${scale}:${format}:${version ?? ''}:${want.join(',')}`;
   const hit = imageCache.get(cacheKey);
   if (hit && Date.now() - hit.at < 10 * 60_000) return hit.urls;
-  const r = await figmaGet<{ images: Record<string, string | null> }>(`/images/${key}?ids=${encodeURIComponent(want.join(','))}&scale=${scale}&format=${format}`);
+  const r = await figmaGet<{ images: Record<string, string | null> }>(`/images/${key}?ids=${encodeURIComponent(want.join(','))}&scale=${scale}&format=${format}${version ? `&version=${encodeURIComponent(version)}` : ''}`);
   imageCache.set(cacheKey, { at: Date.now(), urls: r.images });
   return r.images;
+}
+
+export const VERSION_PREFIX = 'DesignView';
+
+export type FigmaVersion = { id: string; at: string; label: string; description: string; user: string; checkpoint: boolean };
+
+export function mapVersions(raw: any[]): FigmaVersion[] {
+  return raw
+    .map((v): FigmaVersion => {
+      const label = v.label ?? '';
+      const description = v.description ?? '';
+      return { id: String(v.id), at: v.created_at, label, description, user: v.user?.handle ?? 'Unknown', checkpoint: label.startsWith(VERSION_PREFIX) || description.startsWith(VERSION_PREFIX) };
+    })
+    .sort((a, b) => b.at.localeCompare(a.at));
+}
+
+export async function versions(key: string) {
+  const r = await figmaGet<{ versions: any[] }>(`/files/${key}/versions`);
+  return mapVersions(r.versions ?? []);
 }
 
 export async function nodes(key: string, ids: string[]) {
