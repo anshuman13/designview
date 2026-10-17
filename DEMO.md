@@ -153,3 +153,20 @@ differences with a match score. Slider or side by side, and "Send diffs to engin
 Not tried against a real page yet, since it needs a Figma file and spends a few cents.
 
 README.md is rewritten to cover all of this.
+
+## 18. Small things
+
+- The timeline in a new chat asks "What are we designing?" and offers four example briefs as chips.
+- Three variations recipe: three alternatives of a frame in a row, each with a caption, plus Claude's pick.
+- The Figma and Preview tabs use the same empty state style as the rest, with "Open this file" and "Build a
+  prototype" buttons.
+- A chat's spend now survives a server restart (stored per session in spend.json in the chat folder).
+- Phone: the Review switcher scrolls sideways, and Export report is the download icon only.
+
+## Open questions for you
+
+- "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a
+  full run. Turn it off by default?
+- AgentView has the same cross-site request gap that section 16 fixed here. Port the fix there?
+- Not tried with real Figma and Claude yet: comments inbox, crit, copy pass, Changes, build check, image paste.
+  They need a Figma token and spend a few cents each.
