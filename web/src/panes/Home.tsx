@@ -99,7 +99,7 @@ function Recent() {
       <div className="home-recent">
         {files.map((c) => (
           <button key={c.id} className="home-file" onClick={() => send({ type: 'view', id: c.id })}>
-            <span className="home-thumb"><Icon name="file-media" /></span>
+            <span className="home-thumb"><span className="home-frame">{c.file!.trim().charAt(0).toUpperCase()}</span></span>
             <span className="home-file-name">{c.file}</span>
           </button>
         ))}

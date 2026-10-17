@@ -34,6 +34,7 @@ export function buildCommands(_models: { value: string; displayName: string }[] 
     { id: 'stop', label: 'Chat: Stop Claude' },
     { id: 'notify', label: 'Preferences: Toggle Notifications' },
     { id: 'phone', label: 'Open on Phone' },
+    { id: 'shortcuts', label: 'Help: Keyboard shortcuts', key: '?' },
   ];
 }
 

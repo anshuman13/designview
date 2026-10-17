@@ -63,7 +63,7 @@ export function Crit() {
                       <span className={`crit-dot ${pt.kind}`} title={pt.kind} />
                       <div>
                         <span>{pt.text}</span>
-                        {pt.nodeId && <> <button className="link" onClick={() => showNode(pt.nodeId!)}>{pt.nodeId}</button></>}
+                        {pt.nodeId && <> <button className="node-chip" onClick={() => showNode(pt.nodeId!)}>{pt.nodeId}</button></>}
                       </div>
                     </li>
                   ))}
@@ -76,6 +76,12 @@ export function Crit() {
     </div>
   );
 }
+
+const grow = (e: { currentTarget: HTMLTextAreaElement }) => {
+  const el = e.currentTarget;
+  el.style.height = 'auto';
+  el.style.height = `${el.scrollHeight}px`;
+};
 
 export function Copy() {
   const running = useStore((s) => s.session.running);
@@ -139,9 +145,9 @@ export function Copy() {
                     <tr key={i.nodeId}>
                       <td><input type="checkbox" checked={picked.has(i.nodeId)} onChange={() => toggle(i.nodeId)} aria-label={`Accept ${i.before}`} /></td>
                       <td className="before">{i.before}</td>
-                      <td><input value={edits[i.nodeId] ?? i.after} onChange={(e) => setEdits((m) => ({ ...m, [i.nodeId]: e.target.value }))} /></td>
+                      <td><textarea rows={1} value={edits[i.nodeId] ?? i.after} onChange={(e) => setEdits((m) => ({ ...m, [i.nodeId]: e.target.value }))} onInput={grow} ref={(el) => { if (el) grow({ currentTarget: el }); }} /></td>
                       <td className="reason">{i.reason}</td>
-                      <td><button className="link" onClick={() => showNode(i.nodeId)}>{i.nodeId}</button></td>
+                      <td><button className="node-chip" onClick={() => showNode(i.nodeId)}>{i.nodeId}</button></td>
                     </tr>
                   ))}
                 </tbody>
