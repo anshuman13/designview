@@ -2,6 +2,8 @@ import path from 'node:path';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { HOME } from './settings.js';
 
+const MAX_RULES = 20 * 1024;
+
 export type Rules = { global: string; file: string };
 
 const GLOBAL = path.join(HOME, 'rules.md');
@@ -11,8 +13,8 @@ export const readRules = async (dir: string): Promise<Rules> => ({ global: await
 
 export async function writeRules(dir: string, patch: Partial<Rules>) {
   await mkdir(HOME, { recursive: true });
-  if (typeof patch.global === 'string') await writeFile(GLOBAL, patch.global);
-  if (typeof patch.file === 'string') await writeFile(path.join(dir, 'rules.md'), patch.file);
+  if (typeof patch.global === 'string') await writeFile(GLOBAL, patch.global.slice(0, MAX_RULES));
+  if (typeof patch.file === 'string') await writeFile(path.join(dir, 'rules.md'), patch.file.slice(0, MAX_RULES));
   return readRules(dir);
 }
 

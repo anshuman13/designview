@@ -107,6 +107,7 @@ type Hist = { list: string[]; index: number; draft: string };
 
 export function Composer() {
   const cwd = useStore((s) => s.session.cwd);
+  const chatId = useStore((s) => s.session.id);
   const running = useStore((s) => s.session.running);
   const stopping = useStore((s) => s.session.stopping);
   const waiting = useStore((s) => s.pending.length > 0);
@@ -124,6 +125,10 @@ export function Composer() {
   const [stored, setStored] = useState(readStored);
   const [hist, setHist] = useState<Hist | null>(null);
   const [imgs, setImgs] = useState<Img[]>([]);
+  const imgsRef = useRef(imgs);
+  imgsRef.current = imgs;
+  const chatRef = useRef(chatId);
+  chatRef.current = chatId;
   const [busy, setBusy] = useState(0);
   const [drag, setDrag] = useState(false);
   const picker = useRef<HTMLInputElement>(null);
@@ -200,7 +205,15 @@ export function Composer() {
 
   have.current = imgs.length + busy;
 
+  const clearImgs = () => {
+    imgsRef.current.forEach((i) => URL.revokeObjectURL(i.url));
+    setImgs([]);
+  };
+  useEffect(clearImgs, [chatId]);
+  useEffect(() => () => imgsRef.current.forEach((i) => URL.revokeObjectURL(i.url)), []);
+
   const attach = async (list: File[]) => {
+    const forChat = chatRef.current;
     for (const f of list) {
       const problem = imageProblem(f, have.current);
       if (problem) { notice(problem); continue; }
@@ -210,7 +223,7 @@ export function Composer() {
         const r = await fetch(api('/api/attach'), { method: 'POST', headers: { 'content-type': f.type }, body: f });
         const body = await r.json();
         if (!r.ok) throw new Error(body.error);
-        setImgs((l) => [...l, { ref: body.ref, url: URL.createObjectURL(f) }]);
+        if (chatRef.current === forChat) setImgs((l) => [...l, { ref: body.ref, url: URL.createObjectURL(f) }]);
       } catch (err) {
         notice((err as Error).message || 'Upload failed');
       } finally {
@@ -219,7 +232,10 @@ export function Composer() {
     }
   };
 
-  const dropImage = (ref: string) => setImgs((l) => l.filter((i) => i.ref !== ref));
+  const dropImage = (ref: string) => {
+    imgs.filter((i) => i.ref === ref).forEach((i) => URL.revokeObjectURL(i.url));
+    setImgs((l) => l.filter((i) => i.ref !== ref));
+  };
 
   const apply = (next: string, c = next.length) => {
     wantCaret.current = c;
@@ -251,7 +267,7 @@ export function Composer() {
       const images = imgs.length ? imgs.map((i) => i.ref) : undefined;
       if (running) steer(t, images);
       else send({ type: 'prompt', text: t, images });
-      setImgs([]);
+      clearImgs();
       const next = remember(t, stored);
       setStored(next);
       try { localStorage.setItem(STORED_KEY, JSON.stringify(next)); } catch {}

@@ -57,10 +57,7 @@ export function markdown(src: string): string {
   return out.join('\n');
 }
 
-const cleanSvg = (svg: string) =>
-  svg
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*')/gi, '');
+export const safeId = (id: unknown): id is string => typeof id === 'string' && /^[\w:;.-]+$/.test(id) && !id.includes('..');
 
 const section = (title: string, body: string) => `<section><h2>${esc(title)}</h2>${body}</section>`;
 const read = (file: string) => readFile(file, 'utf8').catch(() => null);
@@ -75,12 +72,14 @@ async function sketches(dir: string) {
   if (!doc) return '';
   const blocks: string[] = [];
   for (const s of doc.screens) {
+    if (!safeId(s.id)) continue;
     const figs: string[] = [];
     for (const d of s.directions) {
+      if (!safeId(d.id)) continue;
       const svg = await read(path.join(dir, 'sketches', `${s.id}--${d.id}.svg`));
       if (!svg) continue;
       const chosen = s.chosen === d.id;
-      figs.push(`<figure class="${chosen ? 'chosen' : ''}">${cleanSvg(svg)}<figcaption>${esc(d.name)}${chosen ? ' (chosen)' : ''}<small>${esc(d.rationale)}</small></figcaption></figure>`);
+      figs.push(`<figure class="${chosen ? 'chosen' : ''}"><img alt="${esc(d.name)}" src="data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}"><figcaption>${esc(d.name)}${chosen ? ' (chosen)' : ''}<small>${esc(d.rationale)}</small></figcaption></figure>`);
     }
     if (figs.length) blocks.push(`<h3>${esc(s.name)}</h3><div class="grid">${figs.join('')}</div>`);
   }
@@ -88,6 +87,7 @@ async function sketches(dir: string) {
 }
 
 async function shotFor(dir: string, nodeId: string) {
+  if (!safeId(nodeId)) return null;
   const file = path.join(dir, 'review', 'shots', `${nodeId.replace(/[:;]/g, '-')}.png`);
   const size = await stat(file).then((s) => s.size).catch(() => Infinity);
   if (size > MAX_SHOT_BYTES) return null;
@@ -162,7 +162,7 @@ small, .meta { color: #7a756b; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
 figure { margin: 0; background: #fff; border: 1px solid #e4e0d4; border-radius: 8px; padding: 10px; break-inside: avoid; }
 figure.chosen { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-figure svg, figure img { width: 100%; height: auto; display: block; }
+figure img { width: 100%; height: auto; display: block; }
 figcaption { margin-top: 8px; font-size: 0.9rem; }
 figcaption small { display: block; }
 .findings { list-style: none; padding: 0; }

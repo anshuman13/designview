@@ -1,4 +1,5 @@
-import { MAX_IMAGE_BYTES, saveImage } from './attach.js';
+import { allowedHost, allowedOrigin } from './origin.js';
+import { AttachError, MAX_IMAGE_BYTES, saveImage } from './attach.js';
 import { readRules, writeRules } from './rules.js';
 import { readRecipes, writeRecipes } from './recipes.js';
 import http from 'node:http';
@@ -144,10 +145,17 @@ function watchFiles(cwd: string, onChange: (rel: string) => void) {
   }).on('error', (err) => console.error(`watcher: ${String(err)}`));
 }
 
+const MAX_BODY = 1024 * 1024;
+
 async function readBody(req: http.IncomingMessage) {
-  let body = '';
-  for await (const chunk of req) body += chunk;
-  return body;
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > MAX_BODY) throw new AttachError('Request body too large', 413);
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }
 
 async function readBinary(req: http.IncomingMessage) {
@@ -155,7 +163,7 @@ async function readBinary(req: http.IncomingMessage) {
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > MAX_IMAGE_BYTES) throw new Error('Images must be 5 MB or smaller');
+    if (size > MAX_IMAGE_BYTES) throw new AttachError('Images must be 5 MB or smaller', 413);
     chunks.push(chunk);
   }
   return Buffer.concat(chunks);
@@ -222,6 +230,7 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify(body));
   };
   try {
+    if (req.method !== 'GET' && (!allowedOrigin(req.headers.origin) || !allowedHost(req.headers.host))) return json({ error: 'Forbidden' }, 403);
     const chat = live.get(url.searchParams.get('chat') ?? '')?.chat ?? lastViewed;
     const liveCwds = [...live.values()].map((l) => l.chat.cwd);
     if (url.pathname === '/api/terms' && req.method === 'POST') return json(createTerminal(chat.id, chat.cwd));
@@ -320,7 +329,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/copy') return json({ runs: await readCopy(chat.cwd) });
     if (url.pathname === '/api/report') {
       const figma = chat.state.session.figma;
-      const headers: Record<string, string> = { 'content-type': 'text/html; charset=utf-8' };
+      const headers: Record<string, string> = { 'content-type': 'text/html; charset=utf-8', 'content-security-policy': "default-src 'none'; img-src data:; style-src 'unsafe-inline'" };
       if (url.searchParams.get('download') === '1') headers['content-disposition'] = `attachment; filename="${reportSlug(figma)}-design-report.html"`;
       res.writeHead(200, headers);
       return void res.end(await buildReport(chat.cwd, figma));
@@ -365,11 +374,15 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200, { 'content-type': MIME[path.extname(file)] ?? 'application/octet-stream' });
     res.end(body);
   } catch (err) {
-    json({ error: err instanceof Error ? err.message : String(err) }, err instanceof FigmaError ? err.status : 500);
+    json({ error: err instanceof Error ? err.message : String(err) }, err instanceof FigmaError || err instanceof AttachError ? err.status : 500);
   }
 });
 
-const wss = new WebSocketServer({ server, path: '/ws' });
+const wss = new WebSocketServer({
+  server,
+  path: '/ws',
+  verifyClient: ({ req }, done) => (allowedOrigin(req.headers.origin) ? done(true) : done(false, 403, 'Forbidden')),
+});
 
 wss.on('connection', (ws: WebSocket, req) => {
   const params = new URL(req.url ?? '', 'http://x').searchParams;

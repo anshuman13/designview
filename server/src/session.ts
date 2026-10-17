@@ -133,6 +133,13 @@ export class AgentSession {
   }
 
   private rules = '';
+  private rulesNote = '';
+
+  private sampleBlocked() {
+    if (this.figma?.key !== SAMPLE_KEY) return false;
+    this.system('This is the sample chat. It is read-only, so it never spends tokens. Start a chat from a Figma link to run Claude.');
+    return true;
+  }
   private figmaServers: Record<string, any> = {};
   private strictMcp = false;
 
@@ -257,6 +264,7 @@ export class AgentSession {
   }
 
   sendPrompt(text: string, images: Images = { refs: [], blocks: [] }) {
+    if (this.sampleBlocked()) return;
     const full = withRefs(text, images.refs);
     this.pushEvent({ id: randomUUID(), kind: 'user', text: full, at: Date.now() });
     this.enqueue(full, images.blocks);
@@ -268,6 +276,10 @@ export class AgentSession {
     this.checkpointed = false;
     this.setSession({ running: true });
     if (/^\/compact\b/.test(text.trim())) this.startCompacting();
+    if (this.rulesNote) {
+      text = `${this.rulesNote}\n\n${text}`;
+      this.rulesNote = '';
+    }
     this.inputQueue.push(userMessage(text, blocks));
     this.wake?.();
   }
@@ -299,7 +311,12 @@ export class AgentSession {
   }
 
   async prompt(text: string, refs?: unknown) {
-    if (this.figma?.key === SAMPLE_KEY) return this.system('This is the sample chat. It is read-only, so it never spends tokens. Start a chat from a Figma link to run Claude.');
+    if (this.sampleBlocked()) return;
+    const rules = rulesBlock(await readRules(this.cwd));
+    if (rules !== this.rules) {
+      if (this.q) this.rulesNote = rules ? `House rules updated, follow these from now on:\n${rules}` : 'House rules updated: there are no house rules now.';
+      this.rules = rules;
+    }
     const images = await loadImages(this.cwd, refs);
     const st = await settings();
     this.askBeforeEdit = st.askBeforeEdit;
@@ -328,6 +345,7 @@ export class AgentSession {
   }
 
   private async command(cmd: 'design' | 'sketch' | 'review' | 'audit' | 'system' | 'crit' | 'copy', arg: string, raw: string) {
+    if (this.sampleBlocked()) return;
     if (cmd === 'design' || cmd === 'sketch') {
       if (!arg) return this.system(`Describe what to ${cmd} after /${cmd}`);
       return this.startFlow(arg, cmd);
@@ -401,6 +419,7 @@ export class AgentSession {
   }
 
   private async startFlow(task: string, kind: FlowKind) {
+    if (this.sampleBlocked()) return;
     this.pushEvent({ id: randomUUID(), kind: 'user', text: task, at: Date.now() });
     this.task = task;
     this.retried = false;
@@ -580,6 +599,7 @@ export class AgentSession {
   }
 
   async steer(text: string, id: string = randomUUID(), refs?: unknown) {
+    if (this.sampleBlocked()) return;
     const images = Array.isArray(refs) && refs.length ? await loadImages(this.cwd, refs) : { refs: [], blocks: [] };
     text = withRefs(text, images.refs);
     const running = this.state.session.running;
@@ -596,6 +616,7 @@ export class AgentSession {
   }
 
   changePlan(next: string[]) {
+    if (this.sampleBlocked()) return;
     this.pushEvent({ id: randomUUID(), kind: 'plan', next, at: Date.now() });
     const text = next.length
       ? `I changed your plan. The remaining steps are now:\n${next.map((s, i) => `${i + 1}. ${s}`).join('\n')}\nFollow this plan from here and update set_status to match.`
