@@ -123,3 +123,20 @@ Home has a "Yours" group. "New recipe" saves your own prompt (use {frames} for t
 delete. Palette: "Recipe: Save composer text as recipe" turns what you typed into a recipe.
 
 Try: make a recipe "Dark mode pass" and click it.
+
+## 15. Timeline thumbnails and focus mode
+
+- When Claude reports progress on Figma nodes, the timeline shows small thumbnails of them. Click one to jump there
+  in Figma.
+- Focus mode (Cmd+. or the icon at the right of the tab strip) hides both side panels so Figma, Sketch or Review get
+  the full width. A floating pill shows the phase and lets you exit.
+
+## 16. Security fixes from a review of tonight's code
+
+- The server now rejects POSTs and WebSockets from other websites (Origin and Host checks; localhost, LAN,
+  Tailscale and Netbird stay allowed). Before, any page you visited could write house rules or settings. This was
+  inherited from AgentView, so AgentView has the same gap.
+- The report embeds sketches as images and sends a strict CSP, so a sketch cannot run script.
+- Uploads are checked by their bytes, request bodies are capped at 1 MB, rules at 20 KB.
+- The sample chat is read-only on every path (steer, plan changes, commands), not only new messages.
+- Edited house rules now reach open chats on the next message.
