@@ -34,7 +34,7 @@ export function McpItem() {
   const bad = mcp.some((m) => MCP_BAD.includes(m.status));
   return (
     <span className="item clickable" title="MCP servers" onClick={openMcp}>
-      <span className={`mcp-dot ${bad ? 'bad' : ok ? 'ok' : 'off'}`} /> MCP {mcp.length ? `${ok}/${mcp.length}` : ''}
+      <span className={`mcp-dot ${bad ? 'bad' : ok ? 'ok' : 'off'}`} /> <span className="label">MCP {mcp.length ? `${ok}/${mcp.length}` : ''}</span>
     </span>
   );
 }

@@ -92,3 +92,10 @@
   .brief-status { padding-top: 2px; }
   .brief-input { padding-top: 4px; }
 }
+
+@media (max-width: 900px) {
+  .topbar .spend-pill, .topbar .item, .topbar .run-state { white-space: nowrap; }
+  .topbar .item .label, .topbar .run-state .label { display: none; }
+  .side-switch { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .side-switch > button { flex: none; white-space: nowrap; }
+}

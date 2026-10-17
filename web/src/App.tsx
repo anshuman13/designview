@@ -195,7 +195,7 @@ export function App() {
         </button>
         <span className="spacer" />
         <span className={`run-state ${session.running ? 'busy' : ''}`}>
-          <Icon name={session.running ? 'loading' : 'circle-large-outline'} small spin={session.running} /> {session.running ? status : 'Idle'}
+          <Icon name={session.running ? 'loading' : 'circle-large-outline'} small spin={session.running} /> <span className="label">{session.running ? status : 'Idle'}</span>
         </span>
         <SpendPill />
         <McpItem />
