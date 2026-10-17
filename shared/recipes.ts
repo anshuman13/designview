@@ -130,6 +130,46 @@ export const RECIPES: Recipe[] = [
     prompt:
       'Read the open comments on this Figma file. Fix the ones that ask for a design change, then reply on each comment saying what you changed. For comments that are questions or need a decision from a person, reply with a short note and leave the design as is. List what you did for every comment at the end.',
   },
+  {
+    id: 'a11y-notes',
+    title: 'Accessibility notes',
+    blurb: 'Annotate focus order, headings, labels and alt text for engineers.',
+    icon: 'eye',
+    group: 'ship',
+    needsFrames: true,
+    prompt:
+      'Add accessibility annotations next to {frames} on the DesignView page: numbered focus order, heading levels, accessible names for icon buttons and inputs, alt text for images, and live regions for errors or toasts. Use small sticky-note style frames with arrows to the nodes, grouped in a frame named "A11y notes". Do not change the designs themselves.',
+  },
+  {
+    id: 'l10n-stress',
+    title: 'Localization stress test',
+    blurb: 'Copy frames with 40% longer text and flag what breaks.',
+    icon: 'globe',
+    group: 'improve',
+    needsFrames: true,
+    prompt:
+      'Duplicate {frames} to the right on the DesignView page and replace every text layer with a German-length version about 40% longer (keep the meaning, keep text styles). Then list every place that truncates, wraps badly or overflows, with node links, and suggest a fix for each. Do not change the original frames.',
+  },
+  {
+    id: 'dark-mode',
+    title: 'Dark mode pass',
+    blurb: 'Make dark versions using the library variable modes.',
+    icon: 'color-mode',
+    group: 'improve',
+    needsFrames: true,
+    prompt:
+      'Make dark mode versions of {frames}: duplicate each one below the original on the DesignView page and switch it to the dark variable mode of our color collections. If a fill or stroke is not bound to a variable, bind it to the closest semantic variable first. List any color that has no dark value and any text that drops below 4.5:1 contrast.',
+  },
+  {
+    id: 'to-code',
+    title: 'Frame to code',
+    blurb: 'React and CSS for a frame, using your tokens, saved to the chat folder.',
+    icon: 'code',
+    group: 'ship',
+    needsFrames: true,
+    prompt:
+      'Read {frames} with get_design_context and write a React component with plain CSS that matches it, using CSS variables named after our Figma variables (see design-system.md). Map library components to props, keep the layout in flexbox or grid like the auto layout. Save it as code/<FrameName>.tsx and code/<FrameName>.css in the chat folder and summarise the props. Do not edit Figma.',
+  },
 ];
 
 export function recipePrompt(recipe: Recipe, frames: string | null) {
