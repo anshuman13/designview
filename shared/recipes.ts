@@ -141,6 +141,16 @@ export const RECIPES: Recipe[] = [
       'Add accessibility annotations next to {frames} on the DesignView page: numbered focus order, heading levels, accessible names for icon buttons and inputs, alt text for images, and live regions for errors or toasts. Use small sticky-note style frames with arrows to the nodes, grouped in a frame named "A11y notes". Do not change the designs themselves.',
   },
   {
+    id: 'variations',
+    title: 'Three variations',
+    blurb: 'Side-by-side alternatives of a frame to compare and pick from.',
+    icon: 'layers',
+    group: 'improve',
+    needsFrames: true,
+    prompt:
+      'Make three distinct variations of {frames} on the DesignView page, placed in a row to the right of the original and named "Variation A", "Variation B" and "Variation C". Vary one main idea each (layout and hierarchy, density, emphasis of the primary action), keep the same content and use only library components and variables. Put a one-line caption above each saying what it changes, then tell me which you would pick and why.',
+  },
+  {
     id: 'l10n-stress',
     title: 'Localization stress test',
     blurb: 'Copy frames with 40% longer text and flag what breaks.',

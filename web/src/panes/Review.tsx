@@ -21,7 +21,7 @@ export function Review() {
             <button key={id} role="radio" aria-checked={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{name}</button>
           ))}
         </div>
-        <button className="ghost" style={{ marginLeft: 'auto' }} onClick={() => window.open(api('/api/report'), '_blank')}>Export report</button>
+        <button className="ghost export-report" style={{ marginLeft: 'auto' }} onClick={() => window.open(api('/api/report'), '_blank')}>Export report</button>
         <a className="ghost" href={api('/api/report?download=1')} download aria-label="Download report" title="Download report"><Icon name="cloud-download" /></a>
       </div>
       {tab === 'review' && <ReviewRuns />}

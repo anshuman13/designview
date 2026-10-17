@@ -29,5 +29,5 @@
 .node-chip:hover, .findings .link:hover, .f-body .link:hover { background: var(--figma-soft); text-decoration: underline; }
 @media (max-width: 900px) {
   .crit-grid { grid-template-columns: 1fr; }
-  .crit-tabs { padding: 12px 12px 0; }
+  .crit-tabs { padding: 12px 12px 0; overflow-x: auto; scrollbar-width: none; } .crit-tabs > * { flex: none; } .crit-tabs .export-report { display: none; }
 }
