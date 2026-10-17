@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getJson, send, useRev, useStore } from '../store';
 import { Icon } from '../Icon';
+import { Empty, SystemArt } from './Empty';
+import { insertPrompt } from './Files';
 import type { DesignSystem as DS } from '../../../shared/design';
 
 export function DesignSystem() {
@@ -19,14 +21,7 @@ export function DesignSystem() {
   const rebuild = () => send({ type: 'prompt', text: '/system' });
 
   if (!ds) {
-    return (
-      <div className="side-scroll">
-        <section className="side-section">
-          <p className="hint">{figma ? 'No design system profile yet. DesignView builds one from the file\'s libraries before the first design, or now:' : 'Start a chat from a Figma file first.'}</p>
-          {figma && <button className="primary" disabled={running} onClick={rebuild}><Icon name="sync" small /> Build profile</button>}
-        </section>
-      </div>
-    );
+    return <Empty art={<SystemArt />} title="No design system profile" text="Claude reads your library once and remembers its components, variables and text styles, so designs and reviews use them." action={figma ? { label: 'Build profile', onClick: () => insertPrompt('/system') } : undefined} />;
   }
   return (
     <div className="side-scroll ds">

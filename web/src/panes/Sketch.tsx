@@ -1,6 +1,8 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { getJson, postJson, send, useRev, useStore } from '../store';
 import { Icon } from '../Icon';
+import { Empty, SketchArt } from './Empty';
+import { insertPrompt } from './Files';
 import type { SketchDoc } from '../../../shared/design';
 
 const SketchCanvas = lazy(() => import('./SketchCanvas'));
@@ -46,7 +48,6 @@ export function Sketch() {
           </div>
         )}
         {error && <div className="error-text">{error}</div>}
-        {!doc && !error && <div className="hint">No sketches yet. Ask for a design, or type /sketch and what you need. Claude sketches two or three directions per screen here before it touches Figma.</div>}
         {doc?.screens.map((s) => (
           <div key={s.id} className="sketch-screen">
             <span className="screen-name">{s.name}</span>
@@ -60,13 +61,14 @@ export function Sketch() {
           </div>
         ))}
       </div>
-      <div className="sketch-canvas">
+      {!doc && !error && <Empty art={<SketchArt />} title="No sketches yet" text="Claude sketches two or three low-fidelity directions per screen before it designs. You can draw and leave notes on them." action={{ label: 'Sketch with Claude', onClick: () => insertPrompt('/sketch') }} />}
+      {(doc || error) && <div className="sketch-canvas">
         {board && (
           <Suspense fallback={<div className="hint">Loading the canvas…</div>}>
             <SketchCanvas key={chat} doc={doc} board={board} onBoard={(els) => postJson('/api/sketch/board', { elements: els }).catch(() => {})} />
           </Suspense>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

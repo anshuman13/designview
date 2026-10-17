@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { getJson, postJson, send, useRev, useStore } from '../store';
 import { Icon } from '../Icon';
 import { AREAS, AREA_NAMES, PRESETS, PRESET_INFO, type Area, type Finding, type ReviewDoc, type ReviewPreset, type ReviewRun } from '../../../shared/design';
-import { showNode } from './Files';
+import { showNode, insertPrompt } from './Files';
+import { Empty, ReviewArt } from './Empty';
 
 const SEV: Record<Finding['severity'], string> = { blocking: 'Blocking', major: 'Major', minor: 'Minor' };
 const k = (n: number) => (n >= 1000 ? `${Math.round(n / 1000)}k` : String(n));
@@ -53,7 +54,7 @@ export function Review() {
           </select>
         )}
       </div>
-      {!run && <div className="empty-state"><Icon name="checklist" /><div className="empty-title">No reviews yet</div><div className="muted">A design run reviews its frames automatically. You can also review any frames: paste their links after /review.</div></div>}
+      {!run && <Empty art={<ReviewArt />} title="Nothing reviewed yet" text="Every review starts with a free design system check, then the reviewers you pick with the presets above. Review any frames by pasting their links after /review." action={{ label: 'Run a review', onClick: () => insertPrompt('/review') }} />}
       {run && (
         <>
           <div className="review-summary">

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getJson, postJson, send, setUi, useStore } from '../store';
 import { Icon } from '../Icon';
+import { Empty, FilesArt } from './Empty';
 import { figmaNodeUrl } from '../../../shared/design';
 
 type Frame = { id: string; name: string; page: string; type: string; w: number; h: number };
@@ -67,10 +68,7 @@ export function Files() {
           ))}
         </section>
       ) : (
-        <section className="side-section">
-          <p className="hint">This chat has no Figma file.</p>
-          <button className="primary" onClick={() => setUi({ repoPicker: true })}>Start a chat from a Figma link</button>
-        </section>
+        <Empty art={<FilesArt />} title="Start from a Figma file" text="Paste a Figma link to open its frames here." action={{ label: 'Start a chat from a Figma link', onClick: () => setUi({ repoPicker: true }) }} />
       )}
       <TeamFiles />
     </div>
