@@ -45,3 +45,32 @@ the pill turns amber at 80% and red past 100%. Background reviewers and profile 
 Try: click the "0 tok" pill. Set a budget of 5 in Settings and open it again.
 
 Note: per-chat spend resets when the server restarts; the daily total is kept in ~/.designview/spend.json.
+
+## 5. Design crit and copy pass
+
+The Review tab has three views: Review, Crit and Copy. Both new ones are a single Sonnet call (a few cents) and never
+edit Figma.
+
+- **Crit** (`/crit`): four viewpoints on the frames (new user, power user, accessibility, product), each with a
+  verdict and likes, concerns and ideas linked to nodes.
+- **Copy** (`/copy tone:friendly`): suggested text changes with a reason each. Edit any "after", untick what you
+  don't want, then "Apply selected in Figma" puts a precise use_figma prompt in the composer for you to send.
+
+Try: Review tab, switch to Crit and Copy. The runs shown are sample data in ~/DesignView/scratch.
+
+## 6. Comments inbox
+
+A Comments panel in the left bar lists the Figma file's comment threads, open first. Each has Show in Figma, Reply
+and Ask Claude (fills the composer with the comment and asks Claude to fix it and reply). "Ask Claude to address all
+open comments" does the whole list. Figma's API cannot resolve comments, so Claude replies instead.
+
+Try: needs a chat on a Figma file and a token in Settings.
+
+## 7. Token export and brief templates
+
+- Design system panel: "Export tokens" turns the profile into CSS variables, a Tailwind theme or W3C design tokens
+  JSON, with Copy and Download.
+- New chat dialog: brief templates (feature screen, landing page, onboarding, settings, dashboard, empty and error
+  states). The brief lands in the new chat's composer, not sent.
+
+Try: the file switcher at the top left, pick "Onboarding flow".

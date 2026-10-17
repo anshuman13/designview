@@ -69,6 +69,33 @@ export async function postComment(key: string, message: string, nodeId?: string)
   return figmaGet(`/files/${key}/comments`, { method: 'POST', body: JSON.stringify(body) });
 }
 
+export type CommentUser = { handle: string; img_url: string };
+export type CommentReply = { id: string; message: string; user: CommentUser; created_at: string };
+export type CommentThread = CommentReply & { resolved_at: string | null; nodeId: string | null; replies: CommentReply[] };
+
+export function flattenComments(raw: any[]): CommentThread[] {
+  const user = (c: any): CommentUser => ({ handle: c.user?.handle ?? 'Unknown', img_url: c.user?.img_url ?? '' });
+  const reply = (c: any): CommentReply => ({ id: c.id, message: c.message ?? '', user: user(c), created_at: c.created_at });
+  const byTime = (a: { created_at: string }, b: { created_at: string }) => b.created_at.localeCompare(a.created_at);
+  const roots = raw.filter((c) => !c.parent_id);
+  const threads = roots.map((c): CommentThread => ({
+    ...reply(c),
+    resolved_at: c.resolved_at ?? null,
+    nodeId: c.client_meta?.node_id ?? null,
+    replies: raw.filter((r) => r.parent_id === c.id).map(reply).sort((a, b) => a.created_at.localeCompare(b.created_at)),
+  }));
+  return threads.sort((a, b) => Number(!!a.resolved_at) - Number(!!b.resolved_at) || byTime(a, b));
+}
+
+export async function listComments(key: string) {
+  const r = await figmaGet<{ comments: any[] }>(`/files/${key}/comments?as_md=true`);
+  return flattenComments(r.comments ?? []);
+}
+
+export async function replyComment(key: string, commentId: string, message: string) {
+  return figmaGet(`/files/${key}/comments`, { method: 'POST', body: JSON.stringify({ message, comment_id: commentId }) });
+}
+
 export async function teamProjects(teamId: string) {
   return (await figmaGet<{ projects: Array<{ id: string; name: string }> }>(`/teams/${teamId}/projects`)).projects;
 }

@@ -12,6 +12,7 @@ import { CHECKPOINT, afterFix, afterReview, designFilePrompt, designPrompt, fixP
 import { FIGMA_WRITE, figmaMcp, isFigmaTool } from './lean.js';
 import { boardNotes, readSketch, renderAll } from './sketch.js';
 import { buildProfile, readProfile } from './profile.js';
+import { parseTone, runCopy, runCrit } from './crit.js';
 import { failedAreas, readDesign, runReview, toFix } from './review.js';
 import { checkSummary } from './check.js';
 import { settings } from './settings.js';
@@ -165,6 +166,8 @@ export class AgentSession {
           { name: 'sketch', description: 'Plan and sketch directions only' },
           { name: 'review', description: 'Review frames: /review [check|quick|focused|full] [frame links]' },
           { name: 'audit', description: 'Design system check across the whole file, no model calls' },
+          { name: 'crit', description: 'Design crit from four viewpoints: /crit [frame links]' },
+          { name: 'copy', description: 'Copy pass: /copy [frame links] [tone:friendly|neutral|formal]' },
           { name: 'system', description: 'Rebuild the design system profile' },
           ...commands.filter((c) => c.name !== 'review').map((c) => ({ name: c.name, description: c.description })),
         ],
@@ -315,7 +318,7 @@ export class AgentSession {
     this.setFlow(next);
   }
 
-  private async command(cmd: 'design' | 'sketch' | 'review' | 'audit' | 'system', arg: string, raw: string) {
+  private async command(cmd: 'design' | 'sketch' | 'review' | 'audit' | 'system' | 'crit' | 'copy', arg: string, raw: string) {
     if (cmd === 'design' || cmd === 'sketch') {
       if (!arg) return this.system(`Describe what to ${cmd} after /${cmd}`);
       return this.startFlow(arg, cmd);
@@ -335,6 +338,22 @@ export class AgentSession {
       this.recordBackground('review', run);
       this.system(`Audit done: ${run.check.length ? checkSummary(run.check) : 'no issues'} across ${frames.length} frames. See the Review tab.`);
     });
+    if (cmd === 'crit' || cmd === 'copy') {
+      let frames = nodeIdsIn(arg);
+      if (!frames.length) frames = (await readDesign(this.cwd))?.frames.map((f) => f.nodeId) ?? [];
+      if (!frames.length) return this.system(`/${cmd}: paste frame links after /${cmd}, or run /design first`);
+      const n = `${frames.length} ${frames.length === 1 ? 'frame' : 'frames'}`;
+      if (cmd === 'crit') return this.background(`Critiquing ${n}`, async (signal) => {
+        const run = await runCrit({ dir: this.cwd, fileKey: this.figma!.key, frames, signal, onProgress: (t) => this.setStatus(t) });
+        this.recordBackground('review', run);
+        this.system(`Crit done for ${n} · ${Math.round(run.tokens / 1000)}k tokens. See the Review tab.`);
+      });
+      return this.background(`Reading copy in ${n}`, async (signal) => {
+        const run = await runCopy({ dir: this.cwd, fileKey: this.figma!.key, frames, tone: parseTone(arg), signal, onProgress: (t) => this.setStatus(t) });
+        this.recordBackground('review', run);
+        this.system(`Copy pass done: ${run.items.length} suggested changes · ${Math.round(run.tokens / 1000)}k tokens. See the Review tab.`);
+      });
+    }
     const words = arg.split(/\s+/);
     const preset = (PRESETS as readonly string[]).includes(words[0]) ? (words[0] as ReviewPreset) : this.state.session.flow.preset;
     let frames = nodeIdsIn(arg);

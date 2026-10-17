@@ -12,11 +12,12 @@ import { AgentSession } from './session.js';
 import { notifyAway } from './notify.js';
 import { mcpConfig, mcpProbe } from './mcp.js';
 import { listDir, listFiles, readFileWithOriginal } from './files.js';
-import { FigmaError, chatFolders, fileOutline, folderFor, images, isChatFolder, me, postComment, projectFiles, readFigma, scratchFolder, teamProjects } from './figma.js';
+import { FigmaError, chatFolders, fileOutline, folderFor, images, isChatFolder, listComments, me, postComment, projectFiles, readFigma, replyComment, scratchFolder, teamProjects } from './figma.js';
 import { today } from './spend.js';
 import { publicSettings, saveSettings, settings } from './settings.js';
 import { addFigmaToClaude, figmaMcp } from './lean.js';
 import { pickDirection, readBoard, readSketch, writeBoard } from './sketch.js';
+import { copyApplyPrompt, readCopy, readCrit } from './crit.js';
 import { markPosted, readDesign, readReview } from './review.js';
 import { readProfile } from './profile.js';
 import { MCP_BAD, STALE_MS, type ClientMessage, type LiveChat, type ServerMessage } from '../../shared/protocol.js';
@@ -244,6 +245,12 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/figma/folders') return json((await chatFolders()).filter((f) => f.figma).map((f) => ({ cwd: f.dir, ...f.figma })));
     if (url.pathname === '/api/figma/outline') return json(await fileOutline(needFigma().key));
     if (url.pathname === '/api/figma/thumbs') return json(await images(needFigma().key, (url.searchParams.get('ids') ?? '').split(',').filter(Boolean), 0.3));
+    if (url.pathname === '/api/figma/comments/reply' && req.method === 'POST') {
+      const { commentId, message } = await readJsonBody();
+      if (!commentId || !String(message ?? '').trim()) throw new FigmaError('A comment and a message are required');
+      return json(await replyComment(needFigma().key, String(commentId), String(message).trim()));
+    }
+    if (url.pathname === '/api/figma/comments') return json(await listComments(needFigma().key));
     if (url.pathname === '/api/figma/show' && req.method === 'POST') {
       const f = needFigma();
       return json({ tab: await showFigma(f.key, f.url) });
@@ -272,6 +279,15 @@ const server = http.createServer(async (req, res) => {
       await markPosted(chat.cwd, chosen.map((x) => x.id));
       return json({ posted: chosen.length });
     }
+    if (url.pathname === '/api/crit') return json({ runs: await readCrit(chat.cwd) });
+    if (url.pathname === '/api/copy/apply' && req.method === 'POST') {
+      const { runId, nodeIds, edits } = await readJsonBody();
+      const run = (await readCopy(chat.cwd)).find((r) => r.id === runId);
+      if (!run) return json({ error: 'Copy run not found' }, 404);
+      const items = run.items.filter((i) => Array.isArray(nodeIds) && nodeIds.includes(i.nodeId)).map((i) => ({ ...i, after: typeof edits?.[i.nodeId] === 'string' ? edits[i.nodeId] : i.after }));
+      return json({ prompt: copyApplyPrompt(items) });
+    }
+    if (url.pathname === '/api/copy') return json({ runs: await readCopy(chat.cwd) });
     if (url.pathname === '/api/review') return json(await readReview(chat.cwd));
     if (url.pathname === '/api/design') return json(await readDesign(chat.cwd));
     if (url.pathname === '/api/design-system') return json(await readProfile(chat.cwd));

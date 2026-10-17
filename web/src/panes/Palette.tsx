@@ -15,6 +15,7 @@ const MAX_ROWS = 12;
 const VIEWS = [
   ['files', 'Files'],
   ['chats', 'Chats'],
+  ['comments', 'Comments'],
   ['system', 'Design System'],
 ];
 const CENTER = [['figma', 'Figma'], ['sketch', 'Sketch'], ['review', 'Review'], ['preview', 'Preview'], ['settings', 'Settings']];

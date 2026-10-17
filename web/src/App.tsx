@@ -9,6 +9,7 @@ import { Palette } from './panes/Palette';
 import { Explorer } from './panes/Explorer';
 import { Chats, NewChat } from './panes/Chats';
 import { Files } from './panes/Files';
+import { Comments } from './panes/Comments';
 import { DesignSystem } from './panes/DesignSystem';
 import { Sketch } from './panes/Sketch';
 import { Review } from './panes/Review';
@@ -22,13 +23,14 @@ import { canNotify, toggleNotify, useNotify } from './notify';
 import './page.css';
 import './design.css';
 
-type View = 'files' | 'chats' | 'system' | 'explorer';
+type View = 'files' | 'chats' | 'comments' | 'system' | 'explorer';
 type Center = 'home' | 'figma' | 'sketch' | 'review' | 'preview' | 'code' | 'settings';
 type Tab = 'chat' | 'home' | 'figma' | 'sketch' | 'review' | 'more';
 
 const VIEWS: { id: View; icon: string; title: string; dev?: boolean }[] = [
   { id: 'files', icon: 'file-media', title: 'Files' },
   { id: 'chats', icon: 'comment-discussion', title: 'Chats' },
+  { id: 'comments', icon: 'comment', title: 'Comments' },
   { id: 'system', icon: 'symbol-color', title: 'Design System' },
   { id: 'explorer', icon: 'files', title: 'Chat folder', dev: true },
 ];
@@ -217,7 +219,7 @@ export function App() {
               <button onClick={() => open('settings')}>Settings</button>
             </div>
           )}
-          {view === 'files' ? <Files /> : view === 'chats' ? <Chats /> : view === 'system' ? <DesignSystem /> : <Explorer />}
+          {view === 'files' ? <Files /> : view === 'chats' ? <Chats /> : view === 'comments' ? <Comments /> : view === 'system' ? <DesignSystem /> : <Explorer />}
         </section>
 
         <section className="editor-group pane code">

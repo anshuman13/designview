@@ -75,7 +75,7 @@ export function afterFix(preset: ReviewPreset, fixesDone: number): 'review' | 'v
   return fixesDone < PRESET_INFO[preset].fixRounds ? 'review' : 'verify';
 }
 
-export function parseCommand(text: string): { cmd: 'design' | 'sketch' | 'review' | 'audit' | 'system'; arg: string } | null {
-  const m = /^\/(design|sketch|review|audit|system)\b\s*([\s\S]*)$/.exec(text.trim());
+export function parseCommand(text: string): { cmd: 'design' | 'sketch' | 'review' | 'audit' | 'system' | 'crit' | 'copy'; arg: string } | null {
+  const m = /^\/(design|sketch|review|audit|system|crit|copy)\b\s*([\s\S]*)$/.exec(text.trim());
   return m ? { cmd: m[1] as 'design', arg: m[2].trim() } : null;
 }

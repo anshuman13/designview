@@ -152,3 +152,15 @@ export function nodeIdsIn(text: string): string[] {
 }
 
 export const figmaNodeUrl = (key: string, nodeId: string) => `https://www.figma.com/design/${key}?node-id=${nodeId.replace(':', '-')}`;
+
+export const PERSONAS = ['new-user', 'power-user', 'accessibility', 'product'] as const;
+export type Persona = (typeof PERSONAS)[number];
+export const PERSONA_NAMES: Record<Persona, string> = { 'new-user': 'New user', 'power-user': 'Power user', accessibility: 'Accessibility', product: 'Product' };
+export type CritPoint = { kind: 'like' | 'concern' | 'idea'; text: string; nodeId?: string };
+export type CritPersona = { id: Persona; verdict: string; points: CritPoint[] };
+export type CritRun = { id: string; at: number; frames: string[]; personas: CritPersona[]; summary: string; tokens: number; costUsd: number };
+
+export const TONES = ['friendly', 'neutral', 'formal'] as const;
+export type Tone = (typeof TONES)[number];
+export type CopyItem = { nodeId: string; before: string; after: string; reason: string };
+export type CopyRun = { id: string; at: number; frames: string[]; tone: Tone; items: CopyItem[]; tokens: number; costUsd: number };

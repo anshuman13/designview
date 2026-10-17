@@ -4,12 +4,33 @@ import { Icon } from '../Icon';
 import { AREAS, AREA_NAMES, PRESETS, PRESET_INFO, type Area, type Finding, type ReviewDoc, type ReviewPreset, type ReviewRun } from '../../../shared/design';
 import { showNode, insertPrompt } from './Files';
 import { Empty, ReviewArt } from './Empty';
+import { Copy, Crit } from './Crit';
 
 const SEV: Record<Finding['severity'], string> = { blocking: 'Blocking', major: 'Major', minor: 'Minor' };
+type Tab = 'review' | 'crit' | 'copy';
+
+export function Review() {
+  const [tab, setTab] = useState<Tab>('review');
+  return (
+    <div className="crit-wrap">
+      <div className="crit-tabs">
+        <div className="seg" role="radiogroup" aria-label="Review type">
+          {([['review', 'Review'], ['crit', 'Crit'], ['copy', 'Copy']] as const).map(([id, name]) => (
+            <button key={id} role="radio" aria-checked={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{name}</button>
+          ))}
+        </div>
+      </div>
+      {tab === 'review' && <ReviewRuns />}
+      {tab === 'crit' && <Crit />}
+      {tab === 'copy' && <Copy />}
+    </div>
+  );
+}
+
 const k = (n: number) => (n >= 1000 ? `${Math.round(n / 1000)}k` : String(n));
 const when = (t: number) => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-export function Review() {
+function ReviewRuns() {
   const chat = useStore((s) => s.session.id);
   const running = useStore((s) => s.session.running);
   const flow = useStore((s) => s.session.flow);

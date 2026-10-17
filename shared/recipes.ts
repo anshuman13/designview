@@ -80,22 +80,22 @@ export const RECIPES: Recipe[] = [
   {
     id: 'copy',
     title: 'Copy pass',
-    blurb: 'Make UI copy clear, short and consistent in tone.',
+    blurb: 'Make UI copy clear, short and consistent in tone. Cheap, one Sonnet call.',
     icon: 'symbol-string',
     group: 'improve',
     needsFrames: true,
     prompt:
-      'Review all UI copy in {frames} and rewrite it to be clear, short and consistent in tone: labels, buttons, headings, helper text, errors and empty states. Use sentence case, active voice and the same term for the same thing everywhere. First list every change as "old -> new" grouped by frame, then apply them to the text layers without changing styles or layout.',
+      '/copy tone:friendly {frames}',
   },
   {
     id: 'crit',
     title: 'Design crit',
-    blurb: 'Get feedback from four points of view, without any edits.',
+    blurb: 'Get feedback from four points of view, without any edits. Cheap, one Sonnet call.',
     icon: 'comment-discussion',
     group: 'improve',
     needsFrames: true,
     prompt:
-      'Critique {frames} from four viewpoints: a first-time user, a power user, accessibility (contrast, target size, focus order, labels, color-only meaning), and a product manager (goal fit, scope, metrics). For each viewpoint give the three most important findings, each with the frame and the specific element, why it matters and a suggested fix. Findings only, make no changes to the file.',
+      '/crit {frames}',
   },
   {
     id: 'audit',
