@@ -17,6 +17,7 @@ import { Home } from './panes/Home';
 import { Icon } from './Icon';
 import { ConnectPopover } from './ConnectPopover';
 import { McpItem } from './panes/McpStatus';
+import { SpendPill } from './SpendPill';
 import { canNotify, toggleNotify, useNotify } from './notify';
 import './page.css';
 import './design.css';
@@ -191,6 +192,7 @@ export function App() {
         <span className={`run-state ${session.running ? 'busy' : ''}`}>
           <Icon name={session.running ? 'loading' : 'circle-large-outline'} small spin={session.running} /> {session.running ? status : 'Idle'}
         </span>
+        <SpendPill />
         <McpItem />
         {canNotify && <button className="icon-btn" title={notifying ? 'Notifications on' : 'Notify me when Claude finishes or needs me'} onClick={toggleNotify}><Icon name={notifying ? 'bell' : 'bell-slash'} /></button>}
         <button className="icon-btn" title="Open on phone" onClick={() => setPhone((v) => !v)}><Icon name="device-mobile" /></button>

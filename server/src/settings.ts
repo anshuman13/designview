@@ -27,6 +27,7 @@ export function clean(s: Settings): Settings {
     askBeforeEdit: Boolean(s.askBeforeEdit),
     followClaude: s.followClaude !== false,
     devTools: Boolean(s.devTools),
+    dailyBudgetUsd: Math.max(0, Number(s.dailyBudgetUsd) || 0),
   };
 }
 

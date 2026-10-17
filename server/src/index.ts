@@ -13,6 +13,7 @@ import { notifyAway } from './notify.js';
 import { mcpConfig, mcpProbe } from './mcp.js';
 import { listDir, listFiles, readFileWithOriginal } from './files.js';
 import { FigmaError, chatFolders, fileOutline, folderFor, images, isChatFolder, me, postComment, projectFiles, readFigma, scratchFolder, teamProjects } from './figma.js';
+import { today } from './spend.js';
 import { publicSettings, saveSettings, settings } from './settings.js';
 import { addFigmaToClaude, figmaMcp } from './lean.js';
 import { pickDirection, readBoard, readSketch, writeBoard } from './sketch.js';
@@ -228,6 +229,7 @@ const server = http.createServer(async (req, res) => {
       await deleteSession(id, { dir: info.cwd });
       return json({ ok: true });
     }
+    if (url.pathname === '/api/spend') return json({ today: await today(), budgetUsd: (await settings()).dailyBudgetUsd });
     if (url.pathname === '/api/settings' && req.method === 'POST') return json(publicSettings(await saveSettings(await readJsonBody())));
     if (url.pathname === '/api/settings') return json(publicSettings(await settings()));
     if (url.pathname === '/api/figma/mcp' && req.method === 'POST') return json({ out: await addFigmaToClaude() });

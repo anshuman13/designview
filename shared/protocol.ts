@@ -34,6 +34,9 @@ export type ChatEvent =
   | { id: string; kind: 'status'; text: string; at: number }
   | { id: string; kind: 'plan'; next: string[]; at: number };
 
+export type SpendPart = { tokens: number; costUsd: number };
+export type Spend = SpendPart & { byPhase: Record<string, SpendPart>; byModel: Record<string, SpendPart> };
+
 export type SessionInfo = {
   id: string;
   sessionId: string | null;
@@ -51,6 +54,7 @@ export type SessionInfo = {
   stopping: boolean;
   mcp: McpServer[];
   flow: FlowState;
+  spend: Spend;
 };
 
 export type McpTool = { name: string; description?: string; readOnly?: boolean; destructive?: boolean };

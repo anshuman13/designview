@@ -109,6 +109,7 @@ export type Settings = {
   askBeforeEdit: boolean;
   followClaude: boolean;
   devTools: boolean;
+  dailyBudgetUsd: number;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -120,6 +121,7 @@ export const DEFAULT_SETTINGS: Settings = {
   askBeforeEdit: false,
   followClaude: true,
   devTools: false,
+  dailyBudgetUsd: 0,
 };
 
 export const flowOff = (s: Pick<Settings, 'preset' | 'areas' | 'stopAfterSketch'> = DEFAULT_SETTINGS): FlowState => ({

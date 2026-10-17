@@ -28,3 +28,20 @@ Clicking a recipe fills the composer with a written prompt and does not send it,
 frame is focused in Files, the prompt names it. Every recipe is also in the command palette (Cmd+K) as "Recipe: ...".
 
 Try: click "Missing states" and read the prompt in the composer. Delete it without sending.
+
+## 3. Empty states
+
+Sketch, Review, Design system and Files each show a small line drawing, one sentence on what the tab is for and one
+button that puts the right command (/sketch, /review, /system) in the composer.
+
+Try: the Files sidebar in a chat with no Figma file.
+
+## 4. Spend meter
+
+A pill in the top bar shows what the chat has cost. Click it for a breakdown by phase (plan, sketch, design, review,
+design system, chat) and by model, today's total across all chats, and a budget bar. Set a daily budget in Settings;
+the pill turns amber at 80% and red past 100%. Background reviewers and profile builds count too.
+
+Try: click the "0 tok" pill. Set a budget of 5 in Settings and open it again.
+
+Note: per-chat spend resets when the server restarts; the daily total is kept in ~/.designview/spend.json.

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { writeFile } from 'node:fs/promises';
 import { query, getSessionMessages, type Query, type SDKMessage, type SDKUserMessage, type PermissionMode, type HookInput, type HookJSONOutput, type PermissionResult } from '@anthropic-ai/claude-agent-sdk';
-import { COMPACT_AT, type ChatEvent, type ServerMessage, type ServerState, type SessionInfo } from '../../shared/protocol.js';
+import { COMPACT_AT, type ChatEvent, type ServerMessage, type ServerState, type SessionInfo, type SpendPart } from '../../shared/protocol.js';
 import { AREAS, FLOW_ACTIVE, MODELS, PRESETS, PRESET_INFO, flowOff, nodeIdsIn, type Area, type FigmaFile, type FlowKind, type FlowPhase, type FlowState, type ReviewPreset, type ReviewRun } from '../../shared/design.js';
 import { Approvals } from './approvals.js';
 import { STATUS_REMINDER, agentOptions, userMessage } from './options.js';
@@ -15,6 +15,7 @@ import { buildProfile, readProfile } from './profile.js';
 import { failedAreas, readDesign, runReview, toFix } from './review.js';
 import { checkSummary } from './check.js';
 import { settings } from './settings.js';
+import { addDaily, addSpend, emptySpend, modelTokens } from './spend.js';
 
 type Step = { phase: FlowPhase; model: string; mode: string; label: string; prompt: string };
 
@@ -55,7 +56,7 @@ export class AgentSession {
 
   constructor(public cwd: string, private figma: FigmaFile | null, private resume?: string) {
     this.state = {
-      session: { id: this.id, sessionId: resume ?? null, model: null, cwd, figma, running: false, permissionMode: 'auto', apiKeySource: null, models: [], commands: [], cache: null, context: null, compacting: false, stopping: false, mcp: [], flow: flowOff() },
+      session: { id: this.id, sessionId: resume ?? null, model: null, cwd, figma, running: false, permissionMode: 'auto', apiKeySource: null, models: [], commands: [], cache: null, context: null, compacting: false, stopping: false, mcp: [], flow: flowOff(), spend: emptySpend() },
       status: 'Idle',
       events: [],
       pending: [],
@@ -323,6 +324,7 @@ export class AgentSession {
     if (!this.figma) return this.system('Link a Figma file to this chat first: start a new chat from a Figma link');
     if (cmd === 'system') return this.background('Building the design system profile', async (signal) => {
       const r = await buildProfile(this.cwd, this.figma!, signal);
+      this.recordBackground('system', r);
       this.system(`Design system profile built: ${r.ds.colors.length} colors, ${r.ds.text.length} text styles, ${r.ds.components.length} components (${Math.round(r.tokens / 1000)}k tokens)`);
     });
     if (cmd === 'audit') return this.background('Checking the whole file', async () => {
@@ -330,6 +332,7 @@ export class AgentSession {
       const frames = (await fileOutline(this.figma!.key)).pages.flatMap((p) => p.frames.map((f) => f.id));
       if (!frames.length) return this.system('Audit: the file has no top-level frames');
       const run = await runReview({ dir: this.cwd, fileKey: this.figma!.key, frames, preset: 'check', areas: [], round: 0, kind: 'audit' });
+      this.recordBackground('review', run);
       this.system(`Audit done: ${run.check.length ? checkSummary(run.check) : 'no issues'} across ${frames.length} frames. See the Review tab.`);
     });
     const words = arg.split(/\s+/);
@@ -339,6 +342,7 @@ export class AgentSession {
     if (!frames.length) return this.system('Review: paste frame links after /review, or run /design first');
     return this.background(`Reviewing ${frames.length} ${frames.length === 1 ? 'frame' : 'frames'} (${PRESET_INFO[preset].label})`, async (signal) => {
       const run = await runReview({ dir: this.cwd, fileKey: this.figma!.key, frames, preset, areas: this.state.session.flow.areas, round: 1, kind: 'review', signal, onProgress: (t) => this.setStatus(t) });
+      this.recordBackground('review', run);
       this.reviewNote(run);
     });
   }
@@ -478,6 +482,7 @@ export class AgentSession {
       await this.background('Building the design system profile', async (signal) => {
         const r = await buildProfile(this.cwd, this.figma!, signal);
         this.addTokens(r.tokens);
+        this.recordBackground('system', r);
         this.system(`Design system profile built: ${r.ds.colors.length} colors, ${r.ds.text.length} text styles, ${r.ds.components.length} components`);
       });
       if (this.state.session.flow.phase !== 'system') return;
@@ -501,6 +506,7 @@ export class AgentSession {
     const done: ReviewRun = run;
     this.lastRun = done;
     this.addTokens(done.tokens);
+    this.recordBackground('review', done);
     this.reviewNote(done);
     const pending = toFix(done);
     if (kind === 'verify') return this.finish(pending.length);
@@ -513,6 +519,33 @@ export class AgentSession {
     const tokens = this.state.session.flow.tokens;
     this.endFlow('done', `Design run finished${left ? `, ${left} issues left for you to look at` : ', review passed'} · ${Math.round(tokens / 1000)}k tokens`);
   }
+
+  private recordSpend(phase: string, model: string, tokens: number, costUsd: number) {
+    if (!tokens && !costUsd) return;
+    this.setSession({ spend: addSpend(this.state.session.spend, phase, model, tokens, costUsd) });
+    addDaily(tokens, costUsd).catch(() => {});
+  }
+
+  private recordBackground(phase: 'review' | 'system', r: { tokens: number; costUsd: number }) {
+    this.recordSpend(phase, MODELS.work, r.tokens, r.costUsd);
+  }
+
+  private recordResult(msg: Extract<SDKMessage, { type: 'result' }>) {
+    const p = this.state.session.flow.phase;
+    const phase = this.flowActive() && p ? (p === 'fix' ? 'design' : p === 'pick' ? 'sketch' : p) : 'chat';
+    const cumulative = msg.total_cost_usd >= this.lastCost;
+    const prev = cumulative ? this.lastModels : {};
+    const next: Record<string, SpendPart> = {};
+    for (const [model, u] of Object.entries(msg.modelUsage ?? {})) {
+      next[model] = { tokens: modelTokens(u), costUsd: u.costUSD };
+      this.recordSpend(phase, model, Math.max(0, next[model].tokens - (prev[model]?.tokens ?? 0)), Math.max(0, u.costUSD - (prev[model]?.costUsd ?? 0)));
+    }
+    this.lastCost = msg.total_cost_usd;
+    this.lastModels = next;
+  }
+
+  private lastCost = 0;
+  private lastModels: Record<string, SpendPart> = {};
 
   private addTokens(n: number) {
     if (this.flowActive() || this.state.session.flow.phase === 'system') this.setFlow({ tokens: this.state.session.flow.tokens + n });
@@ -681,6 +714,7 @@ export class AgentSession {
 
       case 'result': {
         this.liveText.clear();
+        this.recordResult(msg);
         const u = msg.usage as any;
         this.addTokens((u?.input_tokens ?? 0) + (u?.output_tokens ?? 0) + (u?.cache_read_input_tokens ?? 0) + (u?.cache_creation_input_tokens ?? 0));
         this.lastResult = msg.subtype === 'success' ? msg.result : '';

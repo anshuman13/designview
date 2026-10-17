@@ -95,6 +95,13 @@ export function Settings() {
       <section className="set-card">
         <h2>Models</h2>
         <p className="muted">Opus 5.5 writes the plan. Sonnet 5.5 sketches, designs, fixes and reviews.</p>
+        <label className="field">
+          <span>Daily budget (USD), 0 = off</span>
+          <div className="inline">
+            <input type="number" min={0} step={1} defaultValue={s.dailyBudgetUsd} onBlur={(e) => Number(e.target.value) !== s.dailyBudgetUsd && save({ dailyBudgetUsd: Number(e.target.value) })} />
+          </div>
+          <span className="muted small">The spend pill turns yellow at 80% and red above 100% of this.</span>
+        </label>
         <Toggle label="Developer tools" detail="Show the chat folder's files and a terminal" on={s.devTools} set={(v) => save({ devTools: v }).then(() => window.dispatchEvent(new Event('designview:settings')))} />
       </section>
     </div>

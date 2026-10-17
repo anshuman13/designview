@@ -16,7 +16,7 @@ type UiState = {
 export type State = ServerState & { live: LiveChat[]; ui: UiState };
 
 let state: State = {
-  session: { id: '', sessionId: null, model: null, cwd: '', figma: null, running: false, permissionMode: null, apiKeySource: null, models: [], commands: [], cache: null, context: null, compacting: false, stopping: false, mcp: [], flow: flowOff() },
+  session: { id: '', sessionId: null, model: null, cwd: '', figma: null, running: false, permissionMode: null, apiKeySource: null, models: [], commands: [], cache: null, context: null, compacting: false, stopping: false, mcp: [], flow: flowOff(), spend: { tokens: 0, costUsd: 0, byPhase: {}, byModel: {} } },
   status: 'Connecting',
   events: [],
   pending: [],
