@@ -8,7 +8,8 @@ import { FileSwitcher } from './panes/FileSwitcher';
 import { Palette } from './panes/Palette';
 import { Explorer } from './panes/Explorer';
 import { Chats, NewChat } from './panes/Chats';
-import { Files } from './panes/Files';
+import { Files, insertPrompt } from './panes/Files';
+import { Empty, PrototypeArt } from './panes/Empty';
 import { Comments } from './panes/Comments';
 import { DesignSystem } from './panes/DesignSystem';
 import { Rules } from './panes/Rules';
@@ -80,7 +81,7 @@ function Preview() {
   useEffect(() => {
     fetch(src, { method: 'GET' }).then((r) => setOk(r.ok)).catch(() => setOk(false));
   }, [src]);
-  if (!ok) return <div className="empty-state"><Icon name="play" /><div className="empty-title">No prototype yet</div><div className="muted">Type /prototype and name the frames. Claude builds a clickable version here.</div></div>;
+  if (!ok) return <Empty art={<PrototypeArt />} title="No prototype yet" text="Claude can turn your frames into a clickable HTML prototype that you can try here and on your phone." action={{ label: 'Build a prototype', onClick: () => insertPrompt('/prototype ') }} />;
   return <iframe className="preview-frame" title="Prototype" src={src} />;
 }
 

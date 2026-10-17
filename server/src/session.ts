@@ -19,7 +19,7 @@ import { checkSummary } from './check.js';
 import { settings } from './settings.js';
 import { loadImages, withRefs, type Images } from './attach.js';
 import { readRules, rulesBlock } from './rules.js';
-import { addDaily, addSpend, emptySpend, modelTokens } from './spend.js';
+import { addDaily, addSpend, emptySpend, loadChatSpend, modelTokens, saveChatSpend } from './spend.js';
 import { SAMPLE_KEY } from './figma.js';
 
 type Step = { phase: FlowPhase; model: string; mode: string; label: string; prompt: string };
@@ -128,6 +128,7 @@ export class AgentSession {
     const s = await settings();
     this.rules = rulesBlock(await readRules(this.cwd));
     this.state.session.flow = flowOff(s);
+    if (this.resume) this.state.session.spend = await loadChatSpend(this.cwd, this.resume);
     const { servers, configured } = await figmaMcp();
     this.figmaServers = servers;
     this.strictMcp = configured;
@@ -584,6 +585,16 @@ export class AgentSession {
     if (!tokens && !costUsd) return;
     this.setSession({ spend: addSpend(this.state.session.spend, phase, model, tokens, costUsd) });
     addDaily(tokens, costUsd).catch(() => {});
+    this.saveSpend();
+  }
+
+  private spendTimer: NodeJS.Timeout | null = null;
+  private saveSpend() {
+    this.spendTimer ??= setTimeout(() => {
+      this.spendTimer = null;
+      const { sessionId, spend } = this.state.session;
+      if (sessionId) saveChatSpend(this.cwd, sessionId, spend).catch(() => {});
+    }, 2000);
   }
 
   private recordBackground(phase: 'review' | 'system', r: { tokens: number; costUsd: number }) {

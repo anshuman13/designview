@@ -573,3 +573,4 @@ button.send { width: auto; padding: 0 8px; gap: 4px; font-size: var(--text-sm); 
 .tl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .tl-chips button { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; font-size: var(--text-sm); color: var(--fg); text-align: left; cursor: pointer; }
 .tl-chips button:hover { border-color: var(--accent); }
+.chrome-setup-note { max-width: 320px; margin: 0 auto 24px; text-align: center; }

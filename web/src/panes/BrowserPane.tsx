@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
+import { useStore, postJson } from '../store';
+import { Empty, BrowserArt } from './Empty';
 
 type Tab = { id: string; title: string; url: string };
 type State = { state: 'off' | 'connecting' | 'on'; reason: string; retry?: boolean };
@@ -22,6 +24,7 @@ export function BrowserPane() {
   const [hasFrame, setHasFrame] = useState(false);
   const [url, setUrl] = useState('');
   const [editing, setEditing] = useState(false);
+  const figma = useStore((s) => s.session.figma);
 
   const send = (m: object) => ws.current?.readyState === WebSocket.OPEN && ws.current.send(JSON.stringify(m));
   const tab = tabs.find((t) => t.id === current);
@@ -185,11 +188,12 @@ export function BrowserPane() {
           onContextMenu={(e) => e.preventDefault()}
         />
         {!hasFrame && (
-          <div className="empty-state">
-            <Icon name="globe" />
-            <div className="empty-title">{tabs.length ? 'Waiting for the tab to draw' : 'No tab open in Chrome'}</div>
-            <div className="muted small">Chrome only draws the tab that is in front. Pick a tab above to bring it forward.</div>
-          </div>
+          <Empty
+            art={<BrowserArt />}
+            title={tabs.length ? 'Waiting for Chrome' : 'No tab open in Chrome'}
+            text="Chrome only draws the tab that is in front. Pick a tab above to bring it forward."
+            action={figma ? { label: 'Open this file', onClick: () => { postJson('/api/figma/show', {}).catch(() => {}); } } : undefined}
+          />
         )}
         <textarea ref={kbd} className="chrome-kbd" aria-label="Type into the page" autoCapitalize="off" autoComplete="off" spellCheck={false} onKeyDown={onKey} onInput={onText} onPaste={(e) => { e.preventDefault(); send({ t: 'text', text: e.clipboardData.getData('text') }); }} />
       </div>
@@ -212,34 +216,26 @@ function Connect({ state, onSetup }: { state: State; onSetup: () => void }) {
   if (state.state === 'connecting') {
     return (
       <div className="browser-pane">
-        <div className="empty-state">
-          <Icon name="loading" spin />
-          <div className="empty-title">Connecting to Chrome</div>
-          <div className="muted small">If Chrome asks to allow remote debugging, click Allow.</div>
-        </div>
+        <Empty art={<BrowserArt />} title="Connecting to Chrome" text="If Chrome asks to allow remote debugging, click Allow." />
       </div>
     );
   }
   const fda = state.reason === 'nofda';
   return (
     <div className="browser-pane">
-      <div className="empty-state chrome-setup">
-        <Icon name="globe" />
-        <div className="empty-title">Show your Chrome here</div>
-        <div className="muted small">{REASONS[state.reason] ?? state.reason}</div>
-        {state.reason !== 'server' && (
-          <button className="primary" onClick={() => { setAsked(true); onSetup(); }}>
-            {fda ? 'Open Full Disk Access settings' : 'Connect Chrome'}
-          </button>
-        )}
-        {asked && (
-          <div className="muted small">
-            {fda
-              ? 'Drag DesignView from the Finder window into the Full Disk Access list and turn it on. DesignView connects on its own; if it does not, quit and reopen it from the menu bar.'
-              : 'In the Chrome tab that opened, tick "Allow remote debugging for this browser instance", then click Allow. DesignView connects on its own.'}
-          </div>
-        )}
-      </div>
+      <Empty
+        art={<BrowserArt />}
+        title="Show your Chrome here"
+        text={REASONS[state.reason] ?? state.reason}
+        action={state.reason !== 'server' ? { label: fda ? 'Open Full Disk Access settings' : 'Connect Chrome', onClick: () => { setAsked(true); onSetup(); } } : undefined}
+      />
+      {asked && (
+        <div className="muted small chrome-setup-note">
+          {fda
+            ? 'Drag DesignView from the Finder window into the Full Disk Access list and turn it on. DesignView connects on its own; if it does not, quit and reopen it from the menu bar.'
+            : 'In the Chrome tab that opened, tick "Allow remote debugging for this browser instance", then click Allow. DesignView connects on its own.'}
+        </div>
+      )}
     </div>
   );
 }

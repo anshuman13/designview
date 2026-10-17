@@ -68,3 +68,25 @@ export function FilesArt() {
     </svg>
   );
 }
+
+export function BrowserArt() {
+  return (
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <rect {...line} x="12" y="22" width="96" height="76" rx="8" />
+      <path {...line} d="M12 40 H108" />
+      <circle {...line} cx="23" cy="31" r="2" />
+      <circle {...line} cx="32" cy="31" r="2" />
+      <rect {...blue} x="30" y="52" width="48" height="34" rx="3" />
+    </svg>
+  );
+}
+
+export function PrototypeArt() {
+  return (
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <rect {...line} x="34" y="12" width="52" height="96" rx="9" />
+      <path {...line} d="M54 20 H66" />
+      <path {...accent} d="M54 50 L72 62 L54 74 Z" />
+    </svg>
+  );
+}

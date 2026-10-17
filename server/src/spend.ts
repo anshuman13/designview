@@ -47,3 +47,20 @@ export async function addDaily(tokens: number, costUsd: number) {
   await mkdir(HOME, { recursive: true });
   await writeFile(FILE, JSON.stringify(day)).catch(() => {});
 }
+
+const chatFile = (cwd: string) => path.join(cwd, 'spend.json');
+
+async function readChatSpends(cwd: string): Promise<Record<string, Spend>> {
+  const raw = await readFile(chatFile(cwd), 'utf8').then(JSON.parse).catch(() => null);
+  return raw && typeof raw === 'object' ? raw : {};
+}
+
+export async function loadChatSpend(cwd: string, sessionId: string): Promise<Spend> {
+  const s = (await readChatSpends(cwd))[sessionId];
+  return s ? { ...emptySpend(), ...s } : emptySpend();
+}
+
+export async function saveChatSpend(cwd: string, sessionId: string, spend: Spend) {
+  const all = await readChatSpends(cwd);
+  await writeFile(chatFile(cwd), JSON.stringify({ ...all, [sessionId]: spend }));
+}
