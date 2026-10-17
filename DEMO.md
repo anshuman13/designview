@@ -101,3 +101,25 @@ Try: add a rule, click away, see "Saved".
 
 Press ? for the sheet. Cmd+1 to Cmd+6 switch tabs (Chrome may keep Cmd+digit, then use Ctrl), / focuses the
 composer. Node ids in crit, copy and review show as Figma-blue chips.
+
+## 12. Sample tour (start here)
+
+Home has "Take the tour with sample data". It opens a read-only chat, "Grocery app (sample)", with a finished brief,
+sketches, a full review, a crit, a copy pass and a design system profile. It never calls Claude or Figma: sending a
+message there only shows a note.
+
+Try: Home, Open sample. Then walk Sketch, Review (Review, Crit, Copy), the Design system panel (Export tokens).
+
+## 13. Design report
+
+Review tab, "Export report" (or the download icon, or "Export: Design report" in the palette). One self-contained
+HTML file with the brief, sketches, frames, review, crit and copy changes. No external requests, prints cleanly.
+
+Try: in the sample chat, Review, Export report.
+
+## 14. Your recipes
+
+Home has a "Yours" group. "New recipe" saves your own prompt (use {frames} for the focused frame), with edit and
+delete. Palette: "Recipe: Save composer text as recipe" turns what you typed into a recipe.
+
+Try: make a recipe "Dark mode pass" and click it.

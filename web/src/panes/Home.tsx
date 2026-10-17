@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getJson, send, useStore } from '../store';
+import { getJson, postJson, send, useStore } from '../store';
 import { Icon } from '../Icon';
 import { insertPrompt } from './Files';
-import { runRecipe } from '../recipes';
-import { RECIPES, RECIPE_GROUPS } from '../../../shared/recipes';
+import { runRecipe, useCustomRecipes } from '../recipes';
+import { RecipeEditor, newDraft, type Draft } from './RecipeEditor';
+import { RECIPES, RECIPE_GROUPS, toRecipe } from '../../../shared/recipes';
 import type { DesignSystem, Settings } from '../../../shared/design';
 
 const command = (id: string) => window.dispatchEvent(new CustomEvent('designview:command', { detail: { id } }));
@@ -108,8 +109,42 @@ function Recent() {
   );
 }
 
+function Sample() {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const open = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const { id } = await postJson<{ id: string }>('/api/sample', {});
+      send({ type: 'view', id });
+      setTimeout(() => command('page:sketch'), 400);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+    setBusy(false);
+  };
+  return (
+    <section className="home-setup">
+      <div className="home-setup-head">
+        <span className="home-setup-title">Take the tour with sample data</span>
+        <button disabled={busy} onClick={() => void open()}>Open sample</button>
+      </div>
+      <p className="muted">See a finished plan, sketches, review, crit and copy pass for a grocery cart. Uses no tokens.</p>
+      {error && <div className="error-text">{error}</div>}
+    </section>
+  );
+}
+
 export function Home() {
   const focus = useStore((s) => s.ui.focus);
+  const custom = useCustomRecipes();
+  const [draft, setDraft] = useState<Draft | null>(null);
+  useEffect(() => {
+    const onNew = (e: Event) => setDraft(newDraft((e as CustomEvent<string>).detail));
+    window.addEventListener('designview:recipe-new', onNew);
+    return () => window.removeEventListener('designview:recipe-new', onNew);
+  }, []);
   return (
     <div className="home">
       <header className="home-head">
@@ -117,6 +152,7 @@ export function Home() {
         <p>Plan, sketch, design and review in Figma with Claude.</p>
       </header>
       <Setup />
+      <Sample />
       {RECIPE_GROUPS.map((g) => (
         <section key={g.id} className="home-group">
           <h2>{g.label}</h2>
@@ -135,7 +171,35 @@ export function Home() {
           </div>
         </section>
       ))}
+      <section className="home-group">
+        <h2>Yours</h2>
+        <div className="home-cards">
+          {custom.map((c) => {
+            const r = toRecipe(c);
+            return (
+              <div key={r.id} className="home-card-wrap">
+                <button className="home-card" onClick={() => void runRecipe(r)}>
+                  <span className="home-card-icon"><Icon name={r.icon} /></span>
+                  <span className="home-card-title">{r.title}</span>
+                  <span className="home-card-blurb">{r.blurb}</span>
+                  <span className="home-card-foot">
+                    <span className="home-badge">Yours</span>
+                    {r.needsFrames && !focus && <span className="home-hint">pick frames in Files</span>}
+                  </span>
+                </button>
+                <button className="icon-btn home-card-edit" title="Edit recipe" aria-label="Edit recipe" onClick={() => setDraft(c)}><Icon name="edit" small /></button>
+              </div>
+            );
+          })}
+          <button className="home-card home-card-new" onClick={() => setDraft(newDraft())}>
+            <span className="home-card-icon"><Icon name="add" /></span>
+            <span className="home-card-title">New recipe</span>
+            <span className="home-card-blurb">Save a prompt you use often.</span>
+          </button>
+        </div>
+      </section>
       <Recent />
+      {draft && <RecipeEditor draft={draft} onClose={() => setDraft(null)} />}
     </div>
   );
 }

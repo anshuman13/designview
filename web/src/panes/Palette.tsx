@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getState, send, setUi, useStore } from '../store';
+import { api, getState, send, setUi, useStore } from '../store';
 import { toggleNotify } from '../notify';
-import { runRecipeById } from '../recipes';
+import { runRecipeById, useCustomRecipes } from '../recipes';
 import { RECIPES } from '../../../shared/recipes';
 import '../palette.css';
 
@@ -20,7 +20,7 @@ const VIEWS = [
 ];
 const CENTER = [['figma', 'Figma'], ['sketch', 'Sketch'], ['review', 'Review'], ['preview', 'Preview'], ['settings', 'Settings']];
 
-export function buildCommands(_models: { value: string; displayName: string }[] = []): Command[] {
+export function buildCommands(_models: { value: string; displayName: string }[] = [], custom: { id: string; title: string }[] = []): Command[] {
   return [
     ...VIEWS.map(([id, title]) => ({ id: `view:${id}`, label: `View: Show ${title}` })),
     ...CENTER.map(([id, title]) => ({ id: `page:${id}`, label: `Open: ${title}` })),
@@ -28,8 +28,10 @@ export function buildCommands(_models: { value: string; displayName: string }[] 
     { id: 'design', label: 'Design: Toggle Design Run for the Next Message' },
     { id: 'review', label: 'Design: Review the Design' },
     { id: 'audit', label: 'Design: Audit the File' },
+    { id: 'report', label: 'Export: Design report' },
     { id: 'system', label: 'Design: Rebuild the Design System Profile' },
-    ...RECIPES.map((r) => ({ id: `recipe:${r.id}`, label: `Recipe: ${r.title}` })),
+    ...[...RECIPES, ...custom].map((r) => ({ id: `recipe:${r.id}`, label: `Recipe: ${r.title}` })),
+    { id: 'recipe-save', label: 'Recipe: Save composer text as recipe' },
     { id: 'compact', label: 'Chat: Compact Context' },
     { id: 'stop', label: 'Chat: Stop Claude' },
     { id: 'notify', label: 'Preferences: Toggle Notifications' },
@@ -103,11 +105,17 @@ function perform(id: string) {
   const [kind, ...rest] = id.split(':');
   const arg = rest.join(':');
   if (kind === 'recipe') runRecipeById(arg);
+  if (id === 'recipe-save') {
+    const text = document.querySelector<HTMLTextAreaElement>('.cp-text textarea')?.value ?? '';
+    window.dispatchEvent(new CustomEvent('designview:command', { detail: { id: 'page:home' } }));
+    setTimeout(() => window.dispatchEvent(new CustomEvent('designview:recipe-new', { detail: text })), 100);
+  }
   if (id === 'compact') send({ type: 'prompt', text: '/compact' });
   else if (id === 'design') send({ type: 'set_flow', patch: { on: !getState().session.flow.on } });
   else if (id === 'review') send({ type: 'prompt', text: '/review' });
   else if (id === 'audit') send({ type: 'prompt', text: '/audit' });
   else if (id === 'system') send({ type: 'prompt', text: '/system' });
+  else if (id === 'report') window.open(api('/api/report'), '_blank');
   else if (id === 'stop') send({ type: 'interrupt' });
   else if (id === 'file') setUi({ switcherOpen: true });
   else if (id === 'repo') setUi({ repoPicker: true });
@@ -122,7 +130,8 @@ export function Palette() {
   const [idx, setIdx] = useState(0);
   const [recent, setRecent] = useState(loadRecent);
   const list = useRef<HTMLUListElement>(null);
-  const commands = useMemo(() => buildCommands(models), [models]);
+  const custom = useCustomRecipes();
+  const commands = useMemo(() => buildCommands(models, custom), [models, custom]);
   const rows = useMemo(() => rankCommands(commands, q, recent), [commands, q, recent]);
 
   useEffect(() => {

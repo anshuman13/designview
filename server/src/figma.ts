@@ -28,11 +28,14 @@ export async function figmaGet<T = any>(route: string, init: RequestInit = {}): 
   return body as T;
 }
 
+export const SAMPLE_KEY = 'sample';
+
 export type FrameInfo = { id: string; name: string; page: string; type: string; w: number; h: number };
 
 export type Outline = { name: string; lastModified: string; thumbnail: string; pages: Array<{ id: string; name: string; frames: FrameInfo[] }> };
 
 export async function fileOutline(key: string): Promise<Outline> {
+  if (key === SAMPLE_KEY) return { name: 'Grocery app (sample)', lastModified: '', thumbnail: '', pages: [] };
   const f = await figmaGet<any>(`/files/${key}?depth=2`);
   const pages = (f.document?.children ?? []).map((p: any) => ({
     id: p.id as string,
@@ -48,7 +51,7 @@ const imageCache = new Map<string, { at: number; urls: Record<string, string | n
 
 export async function images(key: string, ids: string[], scale = 0.5, format: 'png' | 'jpg' = 'png', version?: string) {
   const want = [...new Set(ids)].slice(0, 100);
-  if (!want.length) return {};
+  if (!want.length || key === SAMPLE_KEY) return {};
   const cacheKey = `${key}:${scale}:${format}:${version ?? ''}:${want.join(',')}`;
   const hit = imageCache.get(cacheKey);
   if (hit && Date.now() - hit.at < 10 * 60_000) return hit.urls;
@@ -72,17 +75,20 @@ export function mapVersions(raw: any[]): FigmaVersion[] {
 }
 
 export async function versions(key: string) {
+  if (key === SAMPLE_KEY) return [];
   const r = await figmaGet<{ versions: any[] }>(`/files/${key}/versions`);
   return mapVersions(r.versions ?? []);
 }
 
 export async function nodes(key: string, ids: string[]) {
+  if (key === SAMPLE_KEY) return { name: 'Grocery app (sample)', nodes: {} };
   return figmaGet<{ name: string; nodes: Record<string, { document: any; components: Record<string, any>; componentSets?: Record<string, any>; styles: Record<string, any> } | null> }>(
     `/files/${key}/nodes?ids=${encodeURIComponent(ids.join(','))}`,
   );
 }
 
 export async function postComment(key: string, message: string, nodeId?: string) {
+  if (key === SAMPLE_KEY) return {};
   const body: Record<string, unknown> = { message };
   if (nodeId) body.client_meta = { node_id: nodeId, node_offset: { x: 0, y: 0 } };
   return figmaGet(`/files/${key}/comments`, { method: 'POST', body: JSON.stringify(body) });
@@ -107,11 +113,13 @@ export function flattenComments(raw: any[]): CommentThread[] {
 }
 
 export async function listComments(key: string) {
+  if (key === SAMPLE_KEY) return [];
   const r = await figmaGet<{ comments: any[] }>(`/files/${key}/comments?as_md=true`);
   return flattenComments(r.comments ?? []);
 }
 
 export async function replyComment(key: string, commentId: string, message: string) {
+  if (key === SAMPLE_KEY) return {};
   return figmaGet(`/files/${key}/comments`, { method: 'POST', body: JSON.stringify({ message, comment_id: commentId }) });
 }
 
@@ -152,7 +160,7 @@ export async function chatFolders() {
   return out;
 }
 
-async function installSkills(dir: string) {
+export async function installSkills(dir: string) {
   await mkdir(path.join(dir, '.claude'), { recursive: true });
   await cp(SKILLS, path.join(dir, '.claude', 'skills'), { recursive: true, force: true }).catch((err) => console.error('skills:', err.message));
 }

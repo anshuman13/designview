@@ -1,5 +1,6 @@
 import { MAX_IMAGE_BYTES, saveImage } from './attach.js';
 import { readRules, writeRules } from './rules.js';
+import { readRecipes, writeRecipes } from './recipes.js';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
@@ -14,7 +15,8 @@ import { AgentSession } from './session.js';
 import { notifyAway } from './notify.js';
 import { mcpConfig, mcpProbe } from './mcp.js';
 import { listDir, listFiles, readFileWithOriginal } from './files.js';
-import { FigmaError, chatFolders, fileOutline, folderFor, images, isChatFolder, listComments, me, postComment, projectFiles, readFigma, replyComment, scratchFolder, teamProjects, versions } from './figma.js';
+import { FigmaError, chatFolders, fileOutline, folderFor, images, isChatFolder, listComments, me, postComment, projectFiles, readFigma, replyComment, SAMPLE_KEY, scratchFolder, teamProjects, versions } from './figma.js';
+import { loadSample } from './sample.js';
 import { today } from './spend.js';
 import { publicSettings, saveSettings, settings } from './settings.js';
 import { addFigmaToClaude, figmaMcp } from './lean.js';
@@ -22,6 +24,7 @@ import { pickDirection, readBoard, readSketch, writeBoard } from './sketch.js';
 import { copyApplyPrompt, readCopy, readCrit } from './crit.js';
 import { markPosted, readDesign, readReview } from './review.js';
 import { readProfile } from './profile.js';
+import { buildReport, reportSlug } from './report.js';
 import { MCP_BAD, STALE_MS, type ClientMessage, type LiveChat, type ServerMessage } from '../../shared/protocol.js';
 import { replyLine, sumEdits } from '../../shared/edits.js';
 
@@ -82,7 +85,7 @@ async function createChat(cwd: string, resume?: string, title = '') {
   await chat.init();
   chat.onFocus = (nodeId) => {
     clients.forEach((c) => c.view === chat && c.send({ type: 'focus', nodeId }));
-    if (figma) void settings().then((s) => (s.followClaude ? focusFigma(figma.key, nodeId, false) : null));
+    if (figma && figma.key !== SAMPLE_KEY) void settings().then((s) => (s.followClaude ? focusFigma(figma.key, nodeId, false) : null));
   };
   await chat.loadHistory();
   chat.onMessage((m) => {
@@ -245,7 +248,14 @@ const server = http.createServer(async (req, res) => {
       await deleteSession(id, { dir: info.cwd });
       return json({ ok: true });
     }
+    if (url.pathname === '/api/sample' && req.method === 'POST') {
+      const dir = await loadSample();
+      const open = [...live.values()].map((l) => l.chat).find((c) => c.cwd === dir) ?? (await createChat(dir));
+      return json({ id: open.id, cwd: dir });
+    }
     if (url.pathname === '/api/attach' && req.method === 'POST') return json({ ref: await saveImage(chat.cwd, String(req.headers['content-type'] ?? ''), await readBinary(req)) });
+    if (url.pathname === '/api/recipes' && req.method === 'POST') return json(await writeRecipes(await readJsonBody()));
+    if (url.pathname === '/api/recipes') return json(await readRecipes());
     if (url.pathname === '/api/rules' && req.method === 'POST') return json(await writeRules(chat.cwd, await readJsonBody()));
     if (url.pathname === '/api/rules') return json(await readRules(chat.cwd));
     if (url.pathname === '/api/spend') return json({ today: await today(), budgetUsd: (await settings()).dailyBudgetUsd });
@@ -308,6 +318,13 @@ const server = http.createServer(async (req, res) => {
       return json({ prompt: copyApplyPrompt(items) });
     }
     if (url.pathname === '/api/copy') return json({ runs: await readCopy(chat.cwd) });
+    if (url.pathname === '/api/report') {
+      const figma = chat.state.session.figma;
+      const headers: Record<string, string> = { 'content-type': 'text/html; charset=utf-8' };
+      if (url.searchParams.get('download') === '1') headers['content-disposition'] = `attachment; filename="${reportSlug(figma)}-design-report.html"`;
+      res.writeHead(200, headers);
+      return void res.end(await buildReport(chat.cwd, figma));
+    }
     if (url.pathname === '/api/review') return json(await readReview(chat.cwd));
     if (url.pathname === '/api/design') return json(await readDesign(chat.cwd));
     if (url.pathname === '/api/design-system') return json(await readProfile(chat.cwd));

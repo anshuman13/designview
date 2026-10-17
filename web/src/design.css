@@ -177,6 +177,12 @@
 .home-card-blurb { color: var(--fg-muted); font-size: var(--text-sm); line-height: 1.45; }
 .home-card-foot { margin-top: auto; padding-top: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .home-badge { font-size: var(--text-xs); line-height: 20px; padding: 0 8px; border-radius: 999px; background: var(--bg-sunken); border: 1px solid var(--border); color: var(--fg-muted); }
+.home-card-wrap { position: relative; display: flex; }
+.home-card-wrap .home-card { flex: 1; }
+.home-card-edit { position: absolute; top: 10px; right: 10px; opacity: 0; transition: opacity 0.12s; }
+.home-card-wrap:hover .home-card-edit, .home-card-edit:focus-visible { opacity: 1; }
+.home-card-new { border-style: dashed; box-shadow: none; color: var(--fg-muted); }
+.recipe-delete { margin-right: auto; color: var(--err); }
 .home-hint { font-size: var(--text-xs); color: var(--fg-faint); }
 .home-recent { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
 .home-file { display: flex; flex-direction: column; gap: 8px; padding: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); text-align: left; }
@@ -194,6 +200,7 @@
   .home { padding: 24px 16px 40px; gap: 24px; }
   .home-cards, .home-recent { grid-template-columns: 1fr; }
   .home-card { min-height: 44px; }
+  .home-card-edit { opacity: 1; min-width: 44px; min-height: 44px; top: 4px; right: 4px; }
   .home-setup button, .home-file { min-height: 44px; }
 }
 

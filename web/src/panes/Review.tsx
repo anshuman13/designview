@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getJson, postJson, send, useRev, useStore } from '../store';
+import { api, getJson, postJson, send, useRev, useStore } from '../store';
 import { Icon } from '../Icon';
 import { AREAS, AREA_NAMES, PRESETS, PRESET_INFO, type Area, type Finding, type ReviewDoc, type ReviewPreset, type ReviewRun } from '../../../shared/design';
 import { showNode, insertPrompt } from './Files';
@@ -20,6 +20,8 @@ export function Review() {
             <button key={id} role="radio" aria-checked={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{name}</button>
           ))}
         </div>
+        <button className="ghost" style={{ marginLeft: 'auto' }} onClick={() => window.open(api('/api/report'), '_blank')}>Export report</button>
+        <a className="ghost" href={api('/api/report?download=1')} download aria-label="Download report" title="Download report"><Icon name="cloud-download" /></a>
       </div>
       {tab === 'review' && <ReviewRuns />}
       {tab === 'crit' && <Crit />}

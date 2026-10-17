@@ -19,6 +19,7 @@ import { settings } from './settings.js';
 import { loadImages, withRefs, type Images } from './attach.js';
 import { readRules, rulesBlock } from './rules.js';
 import { addDaily, addSpend, emptySpend, modelTokens } from './spend.js';
+import { SAMPLE_KEY } from './figma.js';
 
 type Step = { phase: FlowPhase; model: string; mode: string; label: string; prompt: string };
 
@@ -298,6 +299,7 @@ export class AgentSession {
   }
 
   async prompt(text: string, refs?: unknown) {
+    if (this.figma?.key === SAMPLE_KEY) return this.system('This is the sample chat. It is read-only, so it never spends tokens. Start a chat from a Figma link to run Claude.');
     const images = await loadImages(this.cwd, refs);
     const st = await settings();
     this.askBeforeEdit = st.askBeforeEdit;
