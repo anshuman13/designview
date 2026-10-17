@@ -8,6 +8,9 @@ import './spend.css';
 import './crit.css';
 import './handoff.css';
 import './comments.css';
+import './shortcuts.css';
+import './versions.css';
+import './rules.css';
 import { touch } from './touch';
 
 if (touch()) window.addEventListener('focusout', () => window.scrollTo(0, 0));

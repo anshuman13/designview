@@ -74,3 +74,30 @@ Try: needs a chat on a Figma file and a token in Settings.
   states). The brief lands in the new chat's composer, not sent.
 
 Try: the file switcher at the top left, pick "Onboarding flow".
+
+## 8. Changes: before and after
+
+Review tab, Changes view. Lists the file's Figma versions, with Claude's checkpoints marked. Pick a version and a
+frame to compare it with now, either with a slider you drag or side by side. Links to the version in Figma.
+
+Try: needs a chat on a Figma file and a token.
+
+## 9. Images in the composer
+
+Paste, drop or attach up to five images (screenshots, references, moodboards). They are saved to refs/ in the chat
+folder and sent to Claude with the message. Pairs with the "Screenshot to design" recipe.
+
+Try: paste a screenshot into the composer and remove it with the x. Do not send unless you want a run.
+
+## 10. House rules
+
+A Rules panel in the left bar with "This file" and "All files" rule lists, such as "no drop shadows on cards".
+Claude gets them in every chat, and the reviewers and crit check against them. "Suggest rules from my design
+system" asks Claude to propose some.
+
+Try: add a rule, click away, see "Saved".
+
+## 11. Shortcuts
+
+Press ? for the sheet. Cmd+1 to Cmd+6 switch tabs (Chrome may keep Cmd+digit, then use Ctrl), / focuses the
+composer. Node ids in crit, copy and review show as Figma-blue chips.

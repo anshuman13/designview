@@ -1,10 +1,11 @@
 import { createSdkMcpServer, tool, type CanUseTool, type HookCallback, type McpServerConfig, type Options, type SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
+import { userContent } from './attach.js';
 import { MODELS, type FigmaFile } from '../../shared/design.js';
 
 export const STATUS_REMINDER = 'You have not called mcp__designview__set_status for a while, so the designer sees no progress. Call it now with what you are doing, what is done and the next steps.';
 
-function instructions(figma: FigmaFile | null) {
+export function instructions(figma: FigmaFile | null, rules = '') {
   return [
     'You work with a product designer in DesignView. They follow your work on a timeline, often from a phone, and watch the Figma file in their browser. Write for a designer: no code, file paths or tool names in your replies unless they ask.',
     figma ? `This chat belongs to the Figma file "${figma.name}" (${figma.url}, file key ${figma.key}). Use the Figma MCP tools on that file.` : 'No Figma file is linked to this chat yet. If the designer asks for design work, ask them to paste the Figma file link.',
@@ -12,7 +13,8 @@ function instructions(figma: FigmaFile | null) {
     'Changing the Figma file: before your first change in a turn, save a version with use_figma and `await figma.saveVersionHistoryAsync("DesignView: <what you are about to do>")`. Put new work on a page named "DesignView". Never edit frames on other pages in place unless the designer says so; duplicate them onto the DesignView page instead.',
     'Design quality: use the library components, color variables, text styles and spacing scale from design-system.md when it exists. Do not hard-code colors or build components by hand.',
     'For anything in a web browser, use the Claude in Chrome tools. They drive the designer\'s own Chrome, where they are logged in to Figma.',
-  ].join('\n\n');
+    rules,
+  ].filter(Boolean).join('\n\n');
 }
 
 function statusServer(onStatus: (text: string, nodes: string[]) => void) {
@@ -43,6 +45,7 @@ export function agentOptions(o: {
   cwd: string;
   resume?: string;
   figma: FigmaFile | null;
+  rules?: string;
   figmaServers: Record<string, McpServerConfig>;
   strictMcp: boolean;
   onStatus: (text: string, nodes: string[]) => void;
@@ -54,7 +57,7 @@ export function agentOptions(o: {
     cwd: o.cwd,
     resume: o.resume,
     model: MODELS.work,
-    systemPrompt: { type: 'preset', preset: 'claude_code', append: instructions(o.figma) },
+    systemPrompt: { type: 'preset', preset: 'claude_code', append: instructions(o.figma, o.rules) },
     settingSources: ['user', 'project', 'local'],
     includePartialMessages: true,
     allowedTools: ['mcp__designview__set_status'],
@@ -73,6 +76,6 @@ export function agentOptions(o: {
   };
 }
 
-export function userMessage(text: string): SDKUserMessage {
-  return { type: 'user', message: { role: 'user', content: text }, parent_tool_use_id: null };
+export function userMessage(text: string, blocks: Parameters<typeof userContent>[1] = []): SDKUserMessage {
+  return { type: 'user', message: { role: 'user', content: userContent(text, blocks) }, parent_tool_use_id: null };
 }

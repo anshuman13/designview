@@ -127,8 +127,8 @@ export const COMPACT_AT = 200_000;
 export const STALE_MS = 12 * 60 * 60 * 1000;
 
 export type ClientMessage =
-  | { type: 'prompt'; text: string }
-  | { type: 'steer'; text: string; id?: string }
+  | { type: 'prompt'; text: string; images?: string[] }
+  | { type: 'steer'; text: string; id?: string; images?: string[] }
   | { type: 'plan'; next: string[] }
   | { type: 'answer'; id: string; answers: Record<string, string> }
   | { type: 'permission'; id: string; allow: boolean; always?: boolean }

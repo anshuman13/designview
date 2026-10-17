@@ -74,11 +74,11 @@ export function send(m: ClientMessage) {
   ws?.readyState === WebSocket.OPEN && ws.send(JSON.stringify(m));
 }
 
-export function steer(text: string) {
+export function steer(text: string, images?: string[]) {
   if (ws?.readyState !== WebSocket.OPEN) return notice('Not connected, message not sent');
   const id = crypto.randomUUID();
   set((s) => ({ events: [...s.events, { id, kind: 'user', text, at: Date.now(), stopping: true }] }));
-  send({ type: 'steer', text, id });
+  send({ type: 'steer', text, id, images });
 }
 
 function handle(m: ServerMessage) {

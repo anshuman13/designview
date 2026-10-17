@@ -1,3 +1,5 @@
+import { MAX_IMAGE_BYTES, saveImage } from './attach.js';
+import { readRules, writeRules } from './rules.js';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
@@ -12,7 +14,7 @@ import { AgentSession } from './session.js';
 import { notifyAway } from './notify.js';
 import { mcpConfig, mcpProbe } from './mcp.js';
 import { listDir, listFiles, readFileWithOriginal } from './files.js';
-import { FigmaError, chatFolders, fileOutline, folderFor, images, isChatFolder, listComments, me, postComment, projectFiles, readFigma, replyComment, scratchFolder, teamProjects } from './figma.js';
+import { FigmaError, chatFolders, fileOutline, folderFor, images, isChatFolder, listComments, me, postComment, projectFiles, readFigma, replyComment, scratchFolder, teamProjects, versions } from './figma.js';
 import { today } from './spend.js';
 import { publicSettings, saveSettings, settings } from './settings.js';
 import { addFigmaToClaude, figmaMcp } from './lean.js';
@@ -145,6 +147,17 @@ async function readBody(req: http.IncomingMessage) {
   return body;
 }
 
+async function readBinary(req: http.IncomingMessage) {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > MAX_IMAGE_BYTES) throw new Error('Images must be 5 MB or smaller');
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
 const isDir = (dir: string) => stat(dir).then((s) => s.isDirectory()).catch(() => false);
 
 async function openSaved(sessionId: string) {
@@ -189,6 +202,8 @@ const inside = (root: string, rel: string) => {
 const MIME: Record<string, string> = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
   '.html': 'text/html',
   '.js': 'text/javascript',
   '.css': 'text/css',
@@ -230,6 +245,9 @@ const server = http.createServer(async (req, res) => {
       await deleteSession(id, { dir: info.cwd });
       return json({ ok: true });
     }
+    if (url.pathname === '/api/attach' && req.method === 'POST') return json({ ref: await saveImage(chat.cwd, String(req.headers['content-type'] ?? ''), await readBinary(req)) });
+    if (url.pathname === '/api/rules' && req.method === 'POST') return json(await writeRules(chat.cwd, await readJsonBody()));
+    if (url.pathname === '/api/rules') return json(await readRules(chat.cwd));
     if (url.pathname === '/api/spend') return json({ today: await today(), budgetUsd: (await settings()).dailyBudgetUsd });
     if (url.pathname === '/api/settings' && req.method === 'POST') return json(publicSettings(await saveSettings(await readJsonBody())));
     if (url.pathname === '/api/settings') return json(publicSettings(await settings()));
@@ -245,6 +263,8 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/figma/folders') return json((await chatFolders()).filter((f) => f.figma).map((f) => ({ cwd: f.dir, ...f.figma })));
     if (url.pathname === '/api/figma/outline') return json(await fileOutline(needFigma().key));
     if (url.pathname === '/api/figma/thumbs') return json(await images(needFigma().key, (url.searchParams.get('ids') ?? '').split(',').filter(Boolean), 0.3));
+    if (url.pathname === '/api/figma/versions') return json(await versions(needFigma().key));
+    if (url.pathname === '/api/figma/render') return json(await images(needFigma().key, (url.searchParams.get('ids') ?? '').split(',').filter(Boolean), 1, 'png', url.searchParams.get('version') || undefined));
     if (url.pathname === '/api/figma/comments/reply' && req.method === 'POST') {
       const { commentId, message } = await readJsonBody();
       if (!commentId || !String(message ?? '').trim()) throw new FigmaError('A comment and a message are required');
@@ -354,10 +374,10 @@ wss.on('connection', (ws: WebSocket, req) => {
     const chat = client.view;
     switch (msg.type) {
       case 'prompt':
-        void chat.prompt(msg.text);
+        void chat.prompt(msg.text, msg.images);
         break;
       case 'steer':
-        void chat.steer(msg.text, typeof msg.id === 'string' ? msg.id.slice(0, 64) : undefined);
+        void chat.steer(msg.text, typeof msg.id === 'string' ? msg.id.slice(0, 64) : undefined, msg.images);
         break;
       case 'plan':
         chat.changePlan(msg.next.filter((t) => typeof t === 'string' && t.trim()).map((t) => t.trim().slice(0, 120)).slice(0, 12));

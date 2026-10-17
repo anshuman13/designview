@@ -16,6 +16,8 @@ import { parseTone, runCopy, runCrit } from './crit.js';
 import { failedAreas, readDesign, runReview, toFix } from './review.js';
 import { checkSummary } from './check.js';
 import { settings } from './settings.js';
+import { loadImages, withRefs, type Images } from './attach.js';
+import { readRules, rulesBlock } from './rules.js';
 import { addDaily, addSpend, emptySpend, modelTokens } from './spend.js';
 
 type Step = { phase: FlowPhase; model: string; mode: string; label: string; prompt: string };
@@ -122,12 +124,14 @@ export class AgentSession {
 
   async init() {
     const s = await settings();
+    this.rules = rulesBlock(await readRules(this.cwd));
     this.state.session.flow = flowOff(s);
     const { servers, configured } = await figmaMcp();
     this.figmaServers = servers;
     this.strictMcp = configured;
   }
 
+  private rules = '';
   private figmaServers: Record<string, any> = {};
   private strictMcp = false;
 
@@ -139,6 +143,7 @@ export class AgentSession {
         cwd: this.cwd,
         resume: this.resume,
         figma: this.figma,
+        rules: this.rules,
         figmaServers: this.figmaServers,
         strictMcp: this.strictMcp,
         onStatus: (text, nodes) => {
@@ -250,18 +255,19 @@ export class AgentSession {
     }
   }
 
-  sendPrompt(text: string) {
-    this.pushEvent({ id: randomUUID(), kind: 'user', text, at: Date.now() });
-    this.enqueue(text);
+  sendPrompt(text: string, images: Images = { refs: [], blocks: [] }) {
+    const full = withRefs(text, images.refs);
+    this.pushEvent({ id: randomUUID(), kind: 'user', text: full, at: Date.now() });
+    this.enqueue(full, images.blocks);
   }
 
-  private enqueue(text: string) {
+  private enqueue(text: string, blocks: Parameters<typeof userMessage>[1] = []) {
     this.start();
     this.turns++;
     this.checkpointed = false;
     this.setSession({ running: true });
     if (/^\/compact\b/.test(text.trim())) this.startCompacting();
-    this.inputQueue.push(userMessage(text));
+    this.inputQueue.push(userMessage(text, blocks));
     this.wake?.();
   }
 
@@ -291,13 +297,14 @@ export class AgentSession {
     }
   }
 
-  async prompt(text: string) {
+  async prompt(text: string, refs?: unknown) {
+    const images = await loadImages(this.cwd, refs);
     const st = await settings();
     this.askBeforeEdit = st.askBeforeEdit;
     const cmd = parseCommand(text);
     if (cmd && !this.state.session.running) return this.command(cmd.cmd, cmd.arg, text);
-    if (this.state.session.flow.on && !this.state.session.running && !text.trim().startsWith('/') && this.state.session.flow.phase !== 'pick') return this.startFlow(text, 'design');
-    this.sendPrompt(text);
+    if (this.state.session.flow.on && !this.state.session.running && !text.trim().startsWith('/') && this.state.session.flow.phase !== 'pick') return this.startFlow(withRefs(text, images.refs), 'design');
+    this.sendPrompt(text, images);
   }
 
   private flowActive() {
@@ -570,7 +577,9 @@ export class AgentSession {
     if (this.flowActive() || this.state.session.flow.phase === 'system') this.setFlow({ tokens: this.state.session.flow.tokens + n });
   }
 
-  async steer(text: string, id: string = randomUUID()) {
+  async steer(text: string, id: string = randomUUID(), refs?: unknown) {
+    const images = Array.isArray(refs) && refs.length ? await loadImages(this.cwd, refs) : { refs: [], blocks: [] };
+    text = withRefs(text, images.refs);
     const running = this.state.session.running;
     const ev: Extract<ChatEvent, { kind: 'user' }> = { id, kind: 'user', text, at: Date.now(), stopping: running };
     this.pushEvent(ev);
@@ -581,7 +590,7 @@ export class AgentSession {
       ev.stopping = false;
       this.emit({ type: 'event', event: ev });
     }
-    this.enqueue(text);
+    this.enqueue(text, images.blocks);
   }
 
   changePlan(next: string[]) {

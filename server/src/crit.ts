@@ -2,6 +2,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { MODELS, PERSONAS, TONES, type CopyItem, type CopyRun, type CritRun, type Tone } from '../../shared/design.js';
+import { readRules, rulesBlock } from './rules.js';
 import { download, images, nodes } from './figma.js';
 import { lean } from './lean.js';
 import { outline } from './review.js';
@@ -117,6 +118,7 @@ export async function runCrit(input: { dir: string; fileKey: string; frames: str
     plan ? `The brief:\n${plan.slice(0, 3000)}` : 'There is no written brief.',
     shots.length ? `Screenshots to look at with Read:\n${shots.join('\n')}` : 'No screenshots are available; use the outline.',
     `Outline of the frames:\n${docs.map((d) => outline(d.document, d.components)).join('\n\n')}`,
+    rulesBlock(await readRules(dir)),
   ].join('\n\n');
   input.onProgress?.('Writing the crit');
   const r = await lean<Pick<CritRun, 'personas' | 'summary'>>(prompt, { cwd: dir, model: MODELS.work, system: CRIT_SYSTEM, schema: CRIT_SCHEMA, tools: ['Read'], maxTurns: 6, signal: input.signal });

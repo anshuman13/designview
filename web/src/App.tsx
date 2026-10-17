@@ -11,6 +11,7 @@ import { Chats, NewChat } from './panes/Chats';
 import { Files } from './panes/Files';
 import { Comments } from './panes/Comments';
 import { DesignSystem } from './panes/DesignSystem';
+import { Rules } from './panes/Rules';
 import { Sketch } from './panes/Sketch';
 import { Review } from './panes/Review';
 import { Settings } from './panes/Settings';
@@ -19,11 +20,12 @@ import { Icon } from './Icon';
 import { ConnectPopover } from './ConnectPopover';
 import { McpItem } from './panes/McpStatus';
 import { SpendPill } from './SpendPill';
+import { Shortcuts } from './Shortcuts';
 import { canNotify, toggleNotify, useNotify } from './notify';
 import './page.css';
 import './design.css';
 
-type View = 'files' | 'chats' | 'comments' | 'system' | 'explorer';
+type View = 'files' | 'chats' | 'comments' | 'system' | 'rules' | 'explorer';
 type Center = 'home' | 'figma' | 'sketch' | 'review' | 'preview' | 'code' | 'settings';
 type Tab = 'chat' | 'home' | 'figma' | 'sketch' | 'review' | 'more';
 
@@ -32,6 +34,7 @@ const VIEWS: { id: View; icon: string; title: string; dev?: boolean }[] = [
   { id: 'chats', icon: 'comment-discussion', title: 'Chats' },
   { id: 'comments', icon: 'comment', title: 'Comments' },
   { id: 'system', icon: 'symbol-color', title: 'Design System' },
+  { id: 'rules', icon: 'law', title: 'Rules' },
   { id: 'explorer', icon: 'files', title: 'Chat folder', dev: true },
 ];
 
@@ -219,7 +222,7 @@ export function App() {
               <button onClick={() => open('settings')}>Settings</button>
             </div>
           )}
-          {view === 'files' ? <Files /> : view === 'chats' ? <Chats /> : view === 'comments' ? <Comments /> : view === 'system' ? <DesignSystem /> : <Explorer />}
+          {view === 'files' ? <Files /> : view === 'chats' ? <Chats /> : view === 'comments' ? <Comments /> : view === 'system' ? <DesignSystem /> : view === 'rules' ? <Rules /> : <Explorer />}
         </section>
 
         <section className="editor-group pane code">
@@ -266,6 +269,7 @@ export function App() {
 
       <FileSwitcher />
       <Palette />
+      <Shortcuts />
       {repoPicker && <NewChat />}
       {phone && <ConnectPopover onClose={() => setPhone(false)} />}
     </div>

@@ -7,6 +7,7 @@ import { FileIcon } from './Explorer';
 import { match } from './FileSwitcher';
 import { COMPACT_AT, type ChatEvent } from '../../../shared/protocol';
 import { AREA_NAMES, PRESETS, PRESET_INFO } from '../../../shared/design';
+import { imageProblem, imagesIn } from './attach';
 import '../composer.css';
 
 export type Trigger = { kind: 'command' | 'file'; start: number; query: string } | { kind: 'shell' } | null;
@@ -100,6 +101,8 @@ function hl(text: string, hits: number[], from = 0): ReactNode {
   return [...text].map((c, i) => (hits.includes(from + i) ? <b key={i}>{c}</b> : c));
 }
 
+type Img = { ref: string; url: string };
+
 type Hist = { list: string[]; index: number; draft: string };
 
 export function Composer() {
@@ -120,6 +123,11 @@ export function Composer() {
   const [files, setFiles] = useState<string[]>([]);
   const [stored, setStored] = useState(readStored);
   const [hist, setHist] = useState<Hist | null>(null);
+  const [imgs, setImgs] = useState<Img[]>([]);
+  const [busy, setBusy] = useState(0);
+  const [drag, setDrag] = useState(false);
+  const picker = useRef<HTMLInputElement>(null);
+  const have = useRef(0);
   const dictate = useDictation(text, setText);
   const ta = useRef<HTMLTextAreaElement>(null);
   const mirror = useRef<HTMLDivElement>(null);
@@ -190,6 +198,29 @@ export function Composer() {
     else { el.style.top = `${r.bottom + 4}px`; el.style.bottom = ''; }
   }, [items]);
 
+  have.current = imgs.length + busy;
+
+  const attach = async (list: File[]) => {
+    for (const f of list) {
+      const problem = imageProblem(f, have.current);
+      if (problem) { notice(problem); continue; }
+      have.current++;
+      setBusy((n) => n + 1);
+      try {
+        const r = await fetch(api('/api/attach'), { method: 'POST', headers: { 'content-type': f.type }, body: f });
+        const body = await r.json();
+        if (!r.ok) throw new Error(body.error);
+        setImgs((l) => [...l, { ref: body.ref, url: URL.createObjectURL(f) }]);
+      } catch (err) {
+        notice((err as Error).message || 'Upload failed');
+      } finally {
+        setBusy((n) => n - 1);
+      }
+    }
+  };
+
+  const dropImage = (ref: string) => setImgs((l) => l.filter((i) => i.ref !== ref));
+
   const apply = (next: string, c = next.length) => {
     wantCaret.current = c;
     setText(next);
@@ -217,8 +248,10 @@ export function Composer() {
       const cmd = t.slice(1).trim();
       if (cmd) runInTerminal(cmd).catch(() => notice('Terminal unavailable'));
     } else {
-      if (running) steer(t);
-      else send({ type: 'prompt', text: t });
+      const images = imgs.length ? imgs.map((i) => i.ref) : undefined;
+      if (running) steer(t, images);
+      else send({ type: 'prompt', text: t, images });
+      setImgs([]);
       const next = remember(t, stored);
       setStored(next);
       try { localStorage.setItem(STORED_KEY, JSON.stringify(next)); } catch {}
@@ -250,7 +283,24 @@ export function Composer() {
 
   return (
     <div className="cp">
-      <div ref={card} className={`cp-card${shell ? ' shell' : ''}`}>
+      <div
+        ref={card}
+        className={`cp-card${shell ? ' shell' : ''}${drag ? ' drop' : ''}`}
+        onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDrag(true); } }}
+        onDragLeave={() => setDrag(false)}
+        onDrop={(e) => { setDrag(false); const list = imagesIn(e.dataTransfer.files); if (list.length) { e.preventDefault(); void attach(list); } }}
+      >
+        {(imgs.length > 0 || busy > 0) && !shell && (
+          <div className="cp-imgs">
+            {imgs.map((i) => (
+              <span key={i.ref} className="cp-img">
+                <img src={i.url} alt="" />
+                <button title="Remove image" aria-label="Remove image" onClick={() => dropImage(i.ref)}><Icon name="close" small /></button>
+              </span>
+            ))}
+            {busy > 0 && <span className="cp-img busy"><Icon name="loading" small spin /></span>}
+          </div>
+        )}
         <div className="cp-text">
           <div ref={mirror} className="cp-mirror" aria-hidden><span className="cp-typed">{text}</span><span className="cp-ghost">{ghost}</span></div>
           <textarea
@@ -262,6 +312,7 @@ export function Composer() {
             onChange={(e) => { setText(e.target.value); setCaret(e.target.selectionStart); }}
             onSelect={(e) => setCaret(e.currentTarget.selectionStart)}
             onKeyDown={onKeyDown}
+            onPaste={(e) => { const list = imagesIn(e.clipboardData.files); if (list.length) { e.preventDefault(); void attach(list); } }}
           />
         </div>
         <div className="cp-foot">
@@ -272,6 +323,8 @@ export function Composer() {
             <Icon name={flow.stopAfterSketch ? 'debug-pause' : 'debug-continue'} small /><span>{flow.stopAfterSketch ? 'Stop after sketch' : 'Run through'}</span>
           </button>
           <span className="cp-spacer" />
+          <input ref={picker} type="file" accept="image/*" multiple hidden onChange={(e) => { void attach(imagesIn(e.target.files)); e.target.value = ''; }} />
+          <button className="icon-btn" title="Attach images" aria-label="Attach images" onClick={() => picker.current?.click()}><Icon name="file-media" small /></button>
           <Voice onText={dictate} />
           {running && (
             <button className="cp-stop" title={stopping ? 'Stopping…' : 'Stop Claude'} aria-label={stopping ? 'Stopping' : 'Stop'} disabled={stopping} onClick={() => send({ type: 'interrupt' })}>

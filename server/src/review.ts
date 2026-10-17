@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { AREAS, AREA_NAMES, MODELS, type Area, type AreaResult, type DesignDoc, type DesignSystem, type Finding, type ReviewDoc, type ReviewPreset, type ReviewRun } from '../../shared/design.js';
 import { checkFrames } from './check.js';
+import { readRules, rulesBlock } from './rules.js';
 import { download, images, nodes } from './figma.js';
 import { lean } from './lean.js';
 
@@ -178,6 +179,7 @@ async function reviewOne(area: Area | 'all', c: { dir: string; plan: string; ds:
     `Outline of the frames:\n${c.outlines}`,
     '',
     `Return at most ${MAX_FINDINGS} findings.`,
+    rulesBlock(await readRules(c.dir)),
   ].join('\n');
   const r = await lean<{ pass: boolean; summary: string; findings: Array<Omit<Finding, 'id'>> }>(prompt, { cwd: c.dir, model: MODELS.work, system: SYSTEM, schema: SCHEMA, maxTurns: 10, signal: c.signal });
   if (!r.data) return { area, pass: false, summary: 'The reviewer did not return a result', findings: [], tokens: r.tokens, costUsd: r.costUsd, error: r.error };
