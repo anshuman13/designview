@@ -8,6 +8,7 @@ const GROUPS: { title: string; rows: [string[], string][] }[] = [
       [['⌘', '⇧', 'P'], 'Command palette (or F1)'],
       [['⌘', 'O'], 'New chat from a Figma file'],
       [['⌘', 'B'], 'Toggle sidebar'],
+      [['⌘', '.'], 'Toggle focus mode'],
       [['⌘', 'J'], 'Toggle terminal (dev tools)'],
       [['/'], 'Focus the composer'],
       [['?'], 'Show this sheet'],

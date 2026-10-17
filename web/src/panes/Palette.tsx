@@ -34,6 +34,7 @@ export function buildCommands(_models: { value: string; displayName: string }[] 
     { id: 'recipe-save', label: 'Recipe: Save composer text as recipe' },
     { id: 'compact', label: 'Chat: Compact Context' },
     { id: 'stop', label: 'Chat: Stop Claude' },
+    { id: 'focus', label: 'View: Toggle focus mode', key: '⌘.' },
     { id: 'notify', label: 'Preferences: Toggle Notifications' },
     { id: 'phone', label: 'Open on Phone' },
     { id: 'shortcuts', label: 'Help: Keyboard shortcuts', key: '?' },

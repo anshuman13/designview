@@ -6,10 +6,12 @@ import { Composer, Markdown } from './Chat';
 import { FlowBar } from './FlowBar';
 import { ReadAloud } from './Voice';
 import { touch } from '../touch';
+import { useThumbs } from '../useThumbs';
+import { showNode } from './Files';
 import { Transcript } from './Transcript';
 import { COMPACT_AT, type ChatEvent } from '../../../shared/protocol';
 
-export type Moment = { id: string; kind: 'you' | 'done' | 'note' | 'fable' | 'reply' | 'plan' | 'phase'; text: string; at: number; stopping?: boolean };
+export type Moment = { id: string; kind: 'you' | 'done' | 'note' | 'fable' | 'reply' | 'plan' | 'phase' | 'status'; text: string; at: number; stopping?: boolean; nodes?: Array<[string, number]> };
 
 
 const BIG_BRO = 'big-bro';
@@ -20,6 +22,7 @@ export function buildTimeline(events: ChatEvent[]) {
   let next: string[] = [];
   let advisor = 0;
   let reply = -1;
+  const seen = new Map<string, number>();
   for (const e of events) {
     if (e.kind === 'user') {
       next = [];
@@ -42,7 +45,15 @@ export function buildTimeline(events: ChatEvent[]) {
     if (e.kind === 'tool_use' && e.input.subagent_type === BIG_BRO) fableCalls.add(e.id);
     if (e.kind === 'tool_result' && fableCalls.has(e.toolUseId) && !e.isError) moments.push({ id: e.id, kind: 'fable', text: handBack(e.text), at: e.at });
     if (e.kind !== 'tool_use' || !e.name.endsWith('__set_status')) continue;
-    if (typeof e.input.done === 'string' && e.input.done.trim()) moments.push({ id: e.id, kind: 'done', text: e.input.done.trim(), at: e.at });
+    const ids = Array.isArray(e.input.nodes) ? e.input.nodes.filter((x): x is string => typeof x === 'string').slice(-3) : [];
+    const nodes = ids.map((id): [string, number] => {
+      const rev = (seen.get(id) ?? 0) + 1;
+      seen.set(id, rev);
+      return [id, rev];
+    });
+    const doneText = typeof e.input.done === 'string' ? e.input.done.trim() : '';
+    if (doneText) moments.push({ id: e.id, kind: 'done', text: doneText, at: e.at, nodes });
+    else if (nodes.length && typeof e.input.text === 'string' && e.input.text.trim()) moments.push({ id: e.id, kind: 'status', text: e.input.text.trim(), at: e.at, nodes });
     if (Array.isArray(e.input.next)) next = e.input.next.filter((x): x is string => typeof x === 'string');
     if (typeof e.input.important === 'string' && e.input.important.trim()) moments.push({ id: `${e.id}:note`, kind: 'note', text: e.input.important.trim(), at: e.at });
   }
@@ -86,6 +97,11 @@ export function Brief() {
   void advisor;
   void fable;
   const setNext = (list: string[]) => send({ type: 'plan', next: list });
+  const figmaKey = useStore((s) => s.session.figma?.key);
+  const withNodes = shown.filter((x) => x.nodes).slice(-10);
+  const wanted = new Map<string, number>();
+  for (const m of withNodes) for (const [id, rev] of m.nodes!) wanted.set(id, Math.max(wanted.get(id) ?? 0, rev));
+  const thumb = useThumbs(figmaKey, [...wanted]);
   const lastReply = [...moments].reverse().find((m) => m.kind === 'reply');
   const state = waiting ? 'waiting' : stopping ? 'stopping' : running ? 'running' : 'idle';
 
@@ -115,7 +131,7 @@ export function Brief() {
         {full ? <Transcript /> : (
           <ol className="timeline">
             {moments.length === 0 && <li className="tl-empty">Describe what you want to design. Your messages, Claude's progress and its replies show up here.</li>}
-            {shown.map((m, i) => <MomentRow key={m.id} m={m} sub={m.kind !== 'you' && shown.slice(0, i).some((x) => x.kind === 'you')} />)}
+            {shown.map((m, i) => <MomentRow key={m.id} m={m} thumb={m.nodes && withNodes.includes(m) ? thumb : undefined} sub={m.kind !== 'you' && shown.slice(0, i).some((x) => x.kind === 'you')} />)}
           </ol>
         )}
         <div className="tl-foot">
@@ -160,10 +176,10 @@ export function Brief() {
 
 const CLAUDE = <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 1.5v13M1.5 8h13M3.4 3.4l9.2 9.2M12.6 3.4l-9.2 9.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>;
 const MARKS: Record<Moment['kind'], ReactNode> = {
-  you: <Icon name="comment" small />, done: <Icon name="check" small />, note: <i className="dot" />, fable: <Icon name="sparkle" small />, reply: CLAUDE, plan: <Icon name="edit" small />, phase: <Icon name="sync" small />,
+  you: <Icon name="comment" small />, done: <Icon name="check" small />, note: <i className="dot" />, fable: <Icon name="sparkle" small />, reply: CLAUDE, plan: <Icon name="edit" small />, phase: <Icon name="sync" small />, status: <Icon name="eye" small />,
 };
 
-function MomentRow({ m, sub }: { m: Moment; sub: boolean }) {
+function MomentRow({ m, sub, thumb }: { m: Moment; sub: boolean; thumb?: (id: string) => string | null }) {
   const [open, setOpen] = useState(false);
   const [long, setLong] = useState(false);
   const body = useRef<HTMLDivElement>(null);
@@ -188,6 +204,13 @@ function MomentRow({ m, sub }: { m: Moment; sub: boolean }) {
       <span className="mark">{MARKS[m.kind]}</span>
       <span className="text">{m.kind === 'fable' && <b>Fable: </b>}{m.text}</span>
       {when}
+      {thumb && m.nodes && (
+        <span className="tl-thumbs">
+          {m.nodes.filter(([id]) => thumb(id)).map(([id]) => (
+            <button key={id} title="Show in Figma" onClick={(e) => { e.stopPropagation(); showNode(id); }}><img src={thumb(id)!} alt="" loading="lazy" /></button>
+          ))}
+        </span>
+      )}
     </li>
   );
 }

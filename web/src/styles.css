@@ -459,6 +459,11 @@ button.link:hover { background: transparent; text-decoration: underline; }
 .tl.sub .text { padding-left: 4px; color: var(--fg-muted); }
 .tl.sub:hover .text { color: var(--fg); }
 .tl.sub .mark .codicon.icon.small { font-size: 12px; }
+.tl-thumbs { grid-column: 2; display: flex; gap: 6px; padding: 4px 0 2px; }
+.tl-thumbs:empty { display: none; }
+.tl-thumbs button { padding: 0; height: 64px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); box-shadow: var(--shadow-sm); overflow: hidden; cursor: pointer; }
+.tl-thumbs img { display: block; height: 100%; width: auto; max-width: 120px; object-fit: contain; }
+.tl.status .mark { color: var(--figma); }
 .tl.done .mark { color: var(--ok); }
 .tl.note .mark .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
 .tl.note .text { color: var(--fg); }
@@ -549,3 +554,15 @@ button.send { width: auto; padding: 0 8px; gap: 4px; font-size: var(--text-sm); 
   50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--err) 0%, transparent); }
 }
 .read-aloud.on { color: var(--claude); }
+
+.tabs .spacer { flex: 1; }
+.tabs .focus-btn { align-self: center; flex: none; margin-right: 6px; }
+.editor-group { position: relative; }
+.focus-pill { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 5; display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-raised); box-shadow: var(--shadow-sm); font-size: var(--text-sm); color: var(--fg-muted); }
+.focus-pill .sep { opacity: 0.5; }
+@media (min-width: 901px) {
+  .workbench[data-focus='true'] .activitybar,
+  .workbench[data-focus='true'] .sidebar,
+  .workbench[data-focus='true'] .sash,
+  .workbench[data-focus='true'] .pane.center { display: none; }
+}

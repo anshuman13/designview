@@ -48,6 +48,7 @@ const CENTER: { id: Center; icon: string; label: string; dev?: boolean }[] = [
 ];
 
 const PHASE_TAB: Record<string, Center> = { sketch: 'sketch', pick: 'sketch', design: 'figma', fix: 'figma', review: 'review' };
+const PHASE_LABEL: Record<string, string> = { plan: 'Plan', sketch: 'Sketch', pick: 'Pick a direction', system: 'Design system', design: 'Design', review: 'Review', fix: 'Fix', done: 'Done', stopped: 'Stopped' };
 const narrow = () => window.innerWidth <= 900;
 
 function stored(key: string, fallback: number) {
@@ -101,6 +102,14 @@ export function App() {
   const [chatW, setChatW] = useState(() => stored('designview.chatW', 460));
   const [termH, setTermH] = useState(() => stored('designview.termH', 240));
   const [terminal, setTerminal] = useState(false);
+  const [focusMode, setFocusMode] = useState(() => {
+    try {
+      return localStorage.getItem('designview.focus') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const toggleFocus = () => setFocusMode((v) => !v);
   const notifying = useNotify();
 
   const loadDev = () => getJson<{ devTools: boolean }>('/api/settings').then((s) => setDev(s.devTools)).catch(() => {});
@@ -149,6 +158,12 @@ export function App() {
 
   useEffect(() => {
     try {
+      localStorage.setItem('designview.focus', focusMode ? '1' : '0');
+    } catch {}
+  }, [focusMode]);
+
+  useEffect(() => {
+    try {
       localStorage.setItem('designview.chatW', String(chatW));
       localStorage.setItem('designview.termH', String(termH));
     } catch {}
@@ -160,6 +175,7 @@ export function App() {
       if (!(e.metaKey || e.ctrlKey)) return;
       const k = e.key.toLowerCase();
       if (k === 'o') { e.preventDefault(); setUi({ repoPicker: true }); }
+      if (k === '.' && !narrow()) { e.preventDefault(); toggleFocus(); }
       if (k === 'b') { e.preventDefault(); setSidebar((v) => !v); }
       if (k === 'j' && dev) { e.preventDefault(); setTerminal((v) => !v); }
     };
@@ -172,6 +188,7 @@ export function App() {
       const [kind, arg] = (e as CustomEvent<{ id: string }>).detail.id.split(':');
       if (kind === 'view') { setView(arg as View); setSidebar(true); if (narrow()) setTab('more'); }
       else if (kind === 'page') open(arg as Center);
+      else if (kind === 'focus') { if (!narrow()) toggleFocus(); }
       else if (kind === 'phone') setPhone((v) => !v);
       else if (kind === 'tab') setTab(arg as Tab);
     };
@@ -186,7 +203,7 @@ export function App() {
   const shownCenter = narrow() && (tab === 'home' || tab === 'figma' || tab === 'sketch' || tab === 'review') ? tab : center;
 
   return (
-    <div className="workbench" data-tab={tab} data-sidebar={sidebar} style={{ '--chat-w': `${chatW}px` } as React.CSSProperties}>
+    <div className="workbench" data-tab={tab} data-sidebar={sidebar} data-focus={focusMode} style={{ '--chat-w': `${chatW}px` } as React.CSSProperties}>
       <Offline />
       <header className="topbar">
         <span className="brand"><span className="logo" />DesignView</span>
@@ -234,6 +251,8 @@ export function App() {
               </button>
             ))}
             {center === 'settings' && <button className="tab active"><Icon name="settings-gear" small /> Settings</button>}
+            <span className="spacer" />
+            <button className="icon-btn focus-btn desktop-only" title={focusMode ? 'Exit focus mode (⌘.)' : 'Focus mode (⌘.)'} onClick={toggleFocus}><Icon name={focusMode ? 'screen-normal' : 'screen-full'} small /></button>
           </div>
           <div className={`editor ${shownCenter === 'home' ? 'shown' : ''}`}>{shownCenter === 'home' && <Home />}</div>
           <div className={`editor browser ${shownCenter === 'figma' ? 'shown' : ''}`}>{shownCenter === 'figma' && <BrowserPane />}</div>
@@ -242,6 +261,15 @@ export function App() {
           <div className={`editor ${shownCenter === 'preview' ? 'shown' : ''}`}>{shownCenter === 'preview' && <Preview />}</div>
           <div className={`editor ${shownCenter === 'settings' ? 'shown' : ''}`}>{shownCenter === 'settings' && <Settings />}</div>
           {dev && <div className={`editor ${shownCenter === 'code' ? 'shown' : ''}`}><CodePane /></div>}
+          {focusMode && (
+            <div className="focus-pill desktop-only">
+              <Icon name={session.running ? 'loading' : 'circle-large-outline'} small spin={session.running} />
+              <span>{PHASE_LABEL[phase ?? ''] ?? 'No design run'}</span>
+              <span className="sep">·</span>
+              <span>{session.running ? 'Running' : 'Idle'}</span>
+              <button className="icon-btn" title="Exit focus mode (⌘.)" onClick={toggleFocus}><Icon name="screen-normal" small /></button>
+            </div>
+          )}
           {dev && (
             <div className="panel" style={terminal ? { height: termH } : undefined}>
               {terminal && <div className="panel-sash" onPointerDown={startTermResize} />}
