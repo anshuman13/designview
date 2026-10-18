@@ -16,7 +16,7 @@ const GROUPS: { title: string; rows: [string[], string][] }[] = [
   },
   {
     title: 'Tabs',
-    rows: ['Home', 'Figma', 'Sketch', 'Review', 'Preview', 'Settings'].map((t, i): [string[], string] => [['⌘', String(i + 1)], t]),
+    rows: ['Figma', 'Sketch', 'Review', 'Preview', 'Settings'].map((t, i): [string[], string] => [['⌘', String(i + 1)], t]),
   },
   {
     title: 'Composer',
@@ -37,7 +37,7 @@ const GROUPS: { title: string; rows: [string[], string][] }[] = [
   },
 ];
 
-const PAGES = ['home', 'figma', 'sketch', 'review', 'preview', 'settings'];
+const PAGES = ['figma', 'sketch', 'review', 'preview', 'settings'];
 const typing = (el: Element | null) => !!el?.matches('input, textarea, select, [contenteditable="true"]');
 const command = (id: string) => window.dispatchEvent(new CustomEvent('designview:command', { detail: { id } }));
 
@@ -47,7 +47,7 @@ export function Shortcuts() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { setOpen(false); return; }
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && /^[1-6]$/.test(e.key)) {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && /^[1-5]$/.test(e.key)) {
         e.preventDefault();
         command(`page:${PAGES[Number(e.key) - 1]}`);
         return;

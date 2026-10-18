@@ -44,9 +44,9 @@ and recipes. The Figma tab shows the Mac's Chrome, so use it on the Mac.
 
 ## Workflows
 
-Home lists recipes in three groups. A recipe puts a written prompt in the composer and does not send it, so you can
-edit it first. If a frame is focused in Files, the prompt names it. Every recipe is also in the command palette as
-"Recipe: ...". "New recipe" in the Yours group saves your own prompt (`{frames}` stands for the focused frame).
+Recipes live in the command palette as "Recipe: ...". A recipe puts a written prompt in the composer and does not send it, so you can
+edit it first. If a frame is focused in Files, the prompt names it. "Recipe: Save composer text as recipe" saves your
+own prompt (`{frames}` stands for the focused frame) and "Recipe: Edit ..." changes it.
 
 | Group | Recipe | What it does |
 | --- | --- | --- |
@@ -152,7 +152,7 @@ export.
 
 ## Sample tour
 
-Home has "Take the tour with sample data". It opens a read-only chat, "Grocery app (sample)", with a finished brief,
+The pinned "Sample: grocery cart tour" row in Chats opens a read-only chat, "Grocery app (sample)", with a finished brief,
 sketches, a full review, a crit, a copy pass and a design system profile. It never calls Claude or Figma. Sending a
 message, steering or running a command there only shows a note.
 
@@ -175,7 +175,7 @@ Press `?` for the sheet. Chrome may keep Cmd+digit; use Ctrl then.
 | Cmd+B | Toggle sidebar |
 | Cmd+. | Toggle focus mode |
 | Cmd+J | Toggle terminal (dev tools) |
-| Cmd+1 to Cmd+6 | Home, Figma, Sketch, Review, Preview, Settings |
+| Cmd+1 to Cmd+5 | Figma, Sketch, Review, Preview, Settings |
 | `/` | Focus the composer |
 | `?` | Show the shortcut sheet |
 | Enter, Shift+Enter | Send, new line |

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { setUi, useStore } from '../store';
+import { CHECKS } from '../setupChecks';
 import { Icon } from '../Icon';
 import { Markdown } from './Chat';
 import { FileIcon } from './Explorer';
@@ -19,7 +20,21 @@ export function Transcript({ children }: { children?: ReactNode }) {
   return <TranscriptView events={events} cwd={cwd} running={running} stopping={stopping} status={status} figmaKey={figmaKey}>{children}</TranscriptView>;
 }
 
-const SUGGESTIONS = ['A notifications settings page with email and push toggles', 'An empty state for a search with no results', 'Onboarding in three steps for a budgeting app', 'A pricing page with three plans and a FAQ'];
+const SUGGESTIONS = ['Review the selected frames for spacing and contrast', 'Write empty, loading and error states for this screen', 'Suggest three layout options for a pricing page', 'Turn these notes into a design brief'];
+
+function SetupBanner() {
+  const [missing, setMissing] = useState(false);
+  useEffect(() => {
+    void Promise.all([CHECKS.figma(), CHECKS.mcp()]).then((r) => setMissing(r.some((c) => c.tone !== 'ok')));
+  }, []);
+  if (!missing) return null;
+  return (
+    <div className="tl-setup">
+      <span>Figma is not connected yet.</span>
+      <button className="link" onClick={() => window.dispatchEvent(new CustomEvent('designview:command', { detail: { id: 'page:settings' } }))}>Open Settings</button>
+    </div>
+  );
+}
 
 export function TranscriptView({ events, cwd, running, stopping, status, figmaKey, children }: { events: ChatEvent[]; cwd: string; running: boolean; stopping: boolean; status: string; figmaKey?: string; children?: ReactNode }) {
   const items = useMemo(() => buildTranscript(events), [events]);
@@ -45,8 +60,9 @@ export function TranscriptView({ events, cwd, running, stopping, status, figmaKe
     <div ref={box} className="tr" onScroll={onScroll}>
       {items.length === 0 && (
         <div className="tl-welcome">
-          <h2>What are we designing?</h2>
-          <p>Claude plans with Opus, then sketches, designs in Figma and reviews with Sonnet.</p>
+          <SetupBanner />
+          <h2>What are we working on?</h2>
+          <p>Chat with Claude about your design. Switch to Design mode (Shift+Tab) for a full plan, sketch, design and review run.</p>
           <div className="tl-chips">
             {SUGGESTIONS.map((s) => <button key={s} onClick={() => insertPrompt(s)}>{s}</button>)}
           </div>

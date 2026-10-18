@@ -527,6 +527,8 @@ button.send { width: auto; padding: 0 8px; gap: 4px; font-size: var(--text-sm); 
 .tl-welcome { display: flex; flex-direction: column; gap: 8px; padding: 12px 2px 4px; }
 .tl-welcome h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: var(--text-lg); }
 .tl-welcome p { margin: 0; font-size: var(--text-sm); color: var(--fg-muted); }
+.tl-setup { display: flex; align-items: center; gap: 8px; font-size: var(--text-sm); color: var(--fg-muted); }
+.tl-setup .link { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font-size: inherit; }
 .tl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .tl-chips button { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; font-size: var(--text-sm); color: var(--fg); text-align: left; cursor: pointer; }
 .tl-chips button:hover { border-color: var(--accent); }

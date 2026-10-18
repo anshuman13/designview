@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, getState, send, setUi, useStore } from '../store';
 import { toggleNotify } from '../notify';
-import { runRecipeById, useCustomRecipes } from '../recipes';
+import { getCustomRecipes, runRecipeById, useCustomRecipes } from '../recipes';
 import { RECIPES } from '../../../shared/recipes';
 import '../palette.css';
 
@@ -31,6 +31,7 @@ export function buildCommands(_models: { value: string; displayName: string }[] 
     { id: 'report', label: 'Export: Design report' },
     { id: 'system', label: 'Design: Rebuild the Design System Profile' },
     ...[...RECIPES, ...custom].map((r) => ({ id: `recipe:${r.id}`, label: `Recipe: ${r.title}` })),
+    ...custom.map((r) => ({ id: `recipe-edit:${r.id}`, label: `Recipe: Edit ${r.title}` })),
     { id: 'recipe-save', label: 'Recipe: Save composer text as recipe' },
     { id: 'compact', label: 'Chat: Compact Context' },
     { id: 'stop', label: 'Chat: Stop Claude' },
@@ -106,10 +107,13 @@ function perform(id: string) {
   const [kind, ...rest] = id.split(':');
   const arg = rest.join(':');
   if (kind === 'recipe') runRecipeById(arg);
+  if (kind === 'recipe-edit') {
+    const r = getCustomRecipes().find((x) => x.id === arg);
+    if (r) window.dispatchEvent(new CustomEvent('designview:recipe-edit', { detail: r }));
+  }
   if (id === 'recipe-save') {
     const text = document.querySelector<HTMLTextAreaElement>('.cp-text textarea')?.value ?? '';
-    window.dispatchEvent(new CustomEvent('designview:command', { detail: { id: 'page:home' } }));
-    setTimeout(() => window.dispatchEvent(new CustomEvent('designview:recipe-new', { detail: text })), 100);
+    window.dispatchEvent(new CustomEvent('designview:recipe-new', { detail: text }));
   }
   if (id === 'compact') send({ type: 'prompt', text: '/compact' });
   else if (id === 'design') send({ type: 'set_flow', patch: { mode: getState().session.flow.mode === 'design' ? 'chat' : 'design' } });

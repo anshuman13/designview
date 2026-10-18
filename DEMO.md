@@ -223,6 +223,15 @@ that row shows the current step. Read aloud moved into the status line.
 
 Try: open any chat with history and click "n steps" above a reply.
 
+## 26. No more Home tab
+
+Home (greeting, setup list, recipe grid) is gone. A new chat now opens to a short welcome with four
+suggestions, and a one-line "Figma is not connected yet" banner when the token or Figma tools are
+missing. The sample tour is the "Sample tour" row at the top of Chats. Custom recipes are in the command
+palette (run or "Recipe: Edit ..."). Chats without a file are grouped under "No file yet".
+
+Try: Chats, click Sample tour. Press ⌘K and type "recipe".
+
 ## Open questions for you
 
 - "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a

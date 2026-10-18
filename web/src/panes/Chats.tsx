@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getJson, send, useStore } from '../store';
+import { getJson, postJson, send, useStore } from '../store';
 import { Icon } from '../Icon';
 import { Confirm, type ConfirmRequest } from '../Confirm';
 import { type ChatEvent, type LiveChat, type SavedSession } from '../../../shared/protocol';
@@ -15,7 +15,7 @@ const byUrgency = (a: LiveChat, b: LiveChat) => urgency(a) - urgency(b) || b.las
 
 export function groupChats(live: LiveChat[], saved: SavedSession[], folders: Folder[]): Group[] {
   const groups = new Map<string, Group>();
-  const name = (cwd: string) => folders.find((f) => f.cwd === cwd)?.name ?? (cwd.endsWith('/scratch') ? 'No file yet' : cwd.split('/').pop() ?? cwd);
+  const name = (cwd: string) => folders.find((f) => f.cwd === cwd)?.name ?? (/\/(scratch|chat-\d{8}-\d{6}[\w-]*)$/.test(cwd) ? 'No file yet' : cwd.split('/').pop() ?? cwd);
   const get = (cwd: string) => groups.get(cwd) ?? groups.set(cwd, { cwd, name: name(cwd), open: [], recent: [] }).get(cwd)!;
   for (const c of live) get(c.cwd).open.push(c);
   const openIds = new Set(live.map((c) => c.sessionId));
@@ -37,6 +37,8 @@ export function Chats() {
   const [saved, setSaved] = useState<SavedSession[]>([]);
   const [ask, setAsk] = useState<ConfirmRequest | null>(null);
   const [opening, setOpening] = useState<string | null>(null);
+  const [sampleBusy, setSampleBusy] = useState(false);
+  const [sampleError, setSampleError] = useState('');
 
   useEffect(() => {
     getJson<Folder[]>('/api/figma/folders').then(setFolders).catch(() => {});
@@ -50,12 +52,31 @@ export function Chats() {
       ? setAsk({ title: 'Close this chat?', detail: c.title, warning: 'Claude is still working on it and will stop. The transcript is kept.', action: 'Close', run: async () => send({ type: 'close', id: c.id }) })
       : send({ type: 'close', id: c.id });
 
+  const openSample = async () => {
+    setSampleBusy(true);
+    setSampleError('');
+    try {
+      const { id } = await postJson<{ id: string }>('/api/sample', {});
+      send({ type: 'view', id });
+      setTimeout(() => window.dispatchEvent(new CustomEvent('designview:command', { detail: { id: 'page:sketch' } })), 400);
+    } catch (err) {
+      setSampleError((err as Error).message);
+    }
+    setSampleBusy(false);
+  };
+
   return (
     <div className="sessions chats">
       <div className="sessions-bar">
         <button className="new-chat primary" onClick={() => send({ type: 'new_chat' })}><Icon name="add" small /> New chat</button>
       </div>
       <div className="tree">
+        <div className={`row session sample ${sampleBusy ? 'busy' : ''}`} title="Open the sample chat" onClick={() => sampleBusy || void openSample()}>
+          <span className="twistie"><Icon name="play" small /></span>
+          <span className="name">Sample tour</span>
+          <span className="when">no tokens</span>
+        </div>
+        {sampleError && <div className="hint error-text">{sampleError}</div>}
         {groups.map((g) => (
           <div key={g.cwd}>
             <div className="row project" title={g.cwd}>

@@ -48,8 +48,3 @@ export const runRecipeById = (id: string) => {
   const r = RECIPES.find((x) => x.id === id) ?? custom.map(toRecipe).find((x) => x.id === id);
   if (r) void runRecipe(r);
 };
-
-export const recipeMatches = (query: string, r: Pick<Recipe, 'title' | 'blurb'>) => {
-  const text = `${r.title} ${r.blurb}`.toLowerCase();
-  return query.toLowerCase().split(/\s+/).filter(Boolean).every((w) => text.includes(w));
-};
