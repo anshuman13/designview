@@ -35,7 +35,10 @@ export type FrameInfo = { id: string; name: string; page: string; type: string; 
 export type Outline = { name: string; lastModified: string; thumbnail: string; pages: Array<{ id: string; name: string; frames: FrameInfo[] }> };
 
 export async function fileOutline(key: string): Promise<Outline> {
-  if (key === SAMPLE_KEY) return { name: 'Grocery app (sample)', lastModified: '', thumbnail: '', pages: [] };
+  if (key === SAMPLE_KEY) {
+    const frame = (id: string, name: string): FrameInfo => ({ id, name, page: 'Design', type: 'FRAME', w: 390, h: 844 });
+    return { name: 'Grocery app (sample)', lastModified: '', thumbnail: '', pages: [{ id: '0:1', name: 'Design', frames: [frame('12:3', 'Cart'), frame('12:4', 'Empty cart')] }] };
+  }
   const f = await figmaGet<any>(`/files/${key}?depth=2`);
   const pages = (f.document?.children ?? []).map((p: any) => ({
     id: p.id as string,

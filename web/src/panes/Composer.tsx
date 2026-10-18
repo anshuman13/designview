@@ -394,7 +394,7 @@ export function Composer() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
   };
 
-  const hint = shell ? 'Runs in the terminal' : stopping ? 'Stopping…' : !text && !running ? hasFile && figmaKey !== 'sample' ? '/ for commands, # for frames' : '/ for commands like /design, /review, /audit' : '';
+  const hint = shell ? 'Runs in the terminal' : stopping ? 'Stopping…' : !text && !running ? hasFile ? '/ for commands, # for frames' : '/ for commands like /design, /review, /audit' : '';
   const placeholder = waiting ? 'Answer below, or steer Claude' : running ? 'Steer Claude: stops the current step and sends this' : MODE_INFO[flow.mode].placeholder;
   const level = pct === null ? '' : context! >= COMPACT_AT ? 'over' : context! >= COMPACT_AT * 0.75 ? 'near' : '';
 

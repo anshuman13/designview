@@ -229,6 +229,9 @@ panel to reload it everywhere at once.
 "This panel hit an error" with the message and a Reload button; the rest of the app keeps working. Events that name an
 unknown sidebar view are ignored instead of blanking the page.
 
+**Sample frame names.** The sample tour's file lists two frames, Cart and Empty cart, so review cards, the Review pane,
+the File panel and `#` show names instead of ids in the tour.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.
