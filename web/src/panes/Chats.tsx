@@ -15,8 +15,12 @@ const byUrgency = (a: LiveChat, b: LiveChat) => urgency(a) - urgency(b) || b.las
 
 export function groupChats(live: LiveChat[], saved: SavedSession[], folders: Folder[]): Group[] {
   const groups = new Map<string, Group>();
-  const name = (cwd: string) => folders.find((f) => f.cwd === cwd)?.name ?? (/\/(scratch|chat-\d{8}-\d{6}[\w-]*)$/.test(cwd) ? 'No file yet' : cwd.split('/').pop() ?? cwd);
-  const get = (cwd: string) => groups.get(cwd) ?? groups.set(cwd, { cwd, name: name(cwd), open: [], recent: [] }).get(cwd)!;
+  const noFile = (cwd: string) => !folders.some((f) => f.cwd === cwd) && /\/(scratch|chat-\d{8}-\d{6}[\w-]*)$/.test(cwd);
+  const name = (cwd: string) => folders.find((f) => f.cwd === cwd)?.name ?? cwd.split('/').pop() ?? cwd;
+  const get = (cwd: string) => {
+    const key = noFile(cwd) ? '' : cwd;
+    return groups.get(key) ?? groups.set(key, { cwd: key, name: key ? name(cwd) : 'No file yet', open: [], recent: [] }).get(key)!;
+  };
   for (const c of live) get(c.cwd).open.push(c);
   const openIds = new Set(live.map((c) => c.sessionId));
   const roots = new Set([...folders.map((f) => f.cwd), ...live.map((c) => c.cwd)]);
@@ -77,12 +81,12 @@ export function Chats() {
         </div>
         {sampleError && <div className="hint error-text">{sampleError}</div>}
         {groups.map((g) => (
-          <div key={g.cwd}>
-            <div className="row project" title={g.cwd}>
+          <div key={g.cwd || 'no-file'}>
+            <div className="row project" title={g.cwd || undefined}>
               <span className="twistie"><Icon name="file-media" small /></span>
               <span className="name">{g.name}</span>
               <span className="acts">
-                <button className="icon-btn" title={`New chat on ${g.name}`} onClick={() => send({ type: 'new_session', cwd: g.cwd })}><Icon name="add" small /></button>
+                <button className="icon-btn" title={`New chat on ${g.name}`} onClick={() => send(g.cwd ? { type: 'new_session', cwd: g.cwd } : { type: 'new_chat' })}><Icon name="add" small /></button>
               </span>
             </div>
             {g.open.map((c) => <LiveRow key={c.id} c={c} selected={c.id === viewing} onClose={() => close(c)} />)}

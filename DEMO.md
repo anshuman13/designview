@@ -159,6 +159,11 @@ These spend tokens and need a Figma token, Claude's Figma tools and a file you c
 5. **Crit and copy.** Type `/crit` or `/copy tone:friendly` with a frame link. Each is one Sonnet call, a few cents.
 6. **Spend.** Click the spend pill to see the cost by phase and model.
 
+## One group for chats without a file
+
+All chats that have no Figma file attached sit in one "No file yet" group in Chats, instead of one group
+per chat folder. Its + button starts another new chat.
+
 ## Open questions for you
 
 - AgentView has the same cross-site request gap that DesignView fixed (Origin and Host checks). Port the fix there?
