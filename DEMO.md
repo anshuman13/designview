@@ -163,6 +163,14 @@ README.md is rewritten to cover all of this.
 - A chat's spend now survives a server restart (stored per session in spend.json in the chat folder).
 - Phone: the Review switcher scrolls sideways, and Export report is the download icon only.
 
+## 19. Check setup
+
+Settings has a "Check setup" card. It tests the Figma token, Figma tools in Claude, Chrome and the Claude CLI login,
+without spending model tokens. Each row says ok or what is wrong, with a fix button where one exists (for example
+"Add Figma to Claude").
+
+Try: Settings, Run all checks.
+
 ## Open questions for you
 
 - "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a

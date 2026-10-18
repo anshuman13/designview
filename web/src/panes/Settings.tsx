@@ -1,9 +1,65 @@
 import { useEffect, useState } from 'react';
 import { getJson, postJson } from '../store';
 import { Icon } from '../Icon';
+import { CHECKS, CHECK_IDS, CHECK_TITLES, addFigmaToClaude, type CheckId, type CheckResult } from '../setupChecks';
 import { AREAS, AREA_NAMES, PRESETS, PRESET_INFO, type Settings as S } from '../../../shared/design';
 
 type McpInfo = { configured: boolean; status: { status: string; error?: string } | null };
+
+type Row = { busy: boolean; result?: CheckResult };
+
+function CheckSetup() {
+  const [rows, setRows] = useState<Partial<Record<CheckId, Row>>>({});
+  const [fixErr, setFixErr] = useState('');
+  const run = async (id: CheckId) => {
+    setRows((r) => ({ ...r, [id]: { busy: true, result: r[id]?.result } }));
+    const result = await CHECKS[id]();
+    setRows((r) => ({ ...r, [id]: { busy: false, result } }));
+  };
+  const all = () => CHECK_IDS.forEach((id) => void run(id));
+  const fix = async (id: CheckId, fixId: string) => {
+    setFixErr('');
+    if (fixId === 'open-figma') return window.dispatchEvent(new CustomEvent('designview:command', { detail: { id: 'page:figma' } }));
+    try {
+      await addFigmaToClaude();
+    } catch (e) {
+      setFixErr((e as Error).message);
+    }
+    void run(id);
+  };
+  const busy = CHECK_IDS.some((id) => rows[id]?.busy);
+  return (
+    <section className="set-card">
+      <div className="inline check-head">
+        <h2>Check setup</h2>
+        <button className="primary" disabled={busy} onClick={all}>Run all checks</button>
+      </div>
+      <p className="muted">Tests each connection without using any model tokens.</p>
+      {fixErr && <div className="error-text">{fixErr}</div>}
+      <ul className="check-list">
+        {CHECK_IDS.map((id) => {
+          const row = rows[id];
+          const r = row?.result;
+          const tone = row?.busy ? 'checking' : r ? r.tone : 'idle';
+          return (
+            <li key={id} className={`check-row ${tone}`}>
+              <span className={`check-dot ${tone}`} aria-hidden />
+              <div className="check-body">
+                <span className="check-title">{CHECK_TITLES[id]}</span>
+                <span className="muted">{row?.busy ? 'Checking…' : r ? r.detail : 'Not checked'}</span>
+                {r?.tone === 'bad' && !row?.busy && r.fix && <span className="check-fix">How to fix: {r.fix}</span>}
+              </div>
+              <div className="check-actions">
+                {r?.tone === 'bad' && !row?.busy && r.fixId && <button className="primary" onClick={() => void fix(id, r.fixId!)}>{r.fixLabel}</button>}
+                <button disabled={row?.busy} onClick={() => void run(id)}>Check</button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
 
 export function Settings() {
   const [s, setS] = useState<S | null>(null);
@@ -69,6 +125,8 @@ export function Settings() {
           )}
         </div>
       </section>
+
+      <CheckSetup />
 
       <section className="set-card">
         <h2>Design runs</h2>

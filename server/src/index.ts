@@ -15,6 +15,7 @@ import { deleteSession, getSessionInfo, listSessions } from '@anthropic-ai/claud
 import { AgentSession } from './session.js';
 import { notifyAway } from './notify.js';
 import { mcpConfig, mcpProbe } from './mcp.js';
+import { claudeStatus } from './doctor.js';
 import { listDir, listFiles, readFileWithOriginal } from './files.js';
 import { FigmaError, chatFolders, fileOutline, folderFor, images, isChatFolder, listComments, me, postComment, projectFiles, readFigma, replyComment, SAMPLE_KEY, scratchFolder, teamProjects, versions } from './figma.js';
 import { loadSample } from './sample.js';
@@ -274,6 +275,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/figma/mcp' && req.method === 'POST') return json({ out: await addFigmaToClaude() });
     if (url.pathname === '/api/figma/mcp') return json({ configured: (await figmaMcp()).configured, status: chat.state.session.mcp.find((m) => /figma/i.test(m.name)) ?? null });
     if (url.pathname === '/api/chrome/status') return json(chromeStatus());
+    if (url.pathname === '/api/claude/status') return json(await claudeStatus());
     if (url.pathname === '/api/figma/me') return json(await me());
     if (url.pathname === '/api/figma/projects') {
       const { teamId } = await settings();
