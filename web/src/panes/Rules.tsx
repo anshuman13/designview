@@ -40,7 +40,7 @@ export function Rules() {
     getJson<R>('/api/rules').then((x) => { setR(x); setDisk(x); }).catch(() => {});
   }, []);
 
-  if (!r) return <div className="rules"><p className="hint">Loading…</p></div>;
+  if (!r) return <p className="hint">Loading…</p>;
 
   const save = (key: keyof R) => async () => {
     if (r[key] === disk[key]) return;
@@ -51,7 +51,7 @@ export function Rules() {
   };
 
   return (
-    <div className="rules">
+    <div className="rules-box">
       <Box title="This file" value={r.file} onChange={(v) => setR({ ...r, file: v })} onSave={save('file')} saved={saved === 'file'} />
       <Box title="All files" value={r.global} onChange={(v) => setR({ ...r, global: v })} onSave={save('global')} saved={saved === 'global'} />
       <p className="hint">Claude follows these in every chat. Changes apply from the next chat you start.</p>

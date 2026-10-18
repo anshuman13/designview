@@ -41,13 +41,13 @@ describe('rankCommands', () => {
   it('keeps definition order and caps at 12 rows without a query', () => {
     const rows = rankCommands(cmds, '', []);
     expect(rows).toHaveLength(12);
-    expect(ids(rows).slice(0, 2)).toEqual(['view:files', 'view:chats']);
+    expect(ids(rows).slice(0, 2)).toEqual(['view:chats', 'view:files']);
     expect(rows.every((r) => !r.recent)).toBe(true);
   });
 
   it('puts recently used commands first, most recent on top', () => {
     const rows = rankCommands(cmds, '', ['stop', 'audit']);
-    expect(ids(rows).slice(0, 3)).toEqual(['stop', 'audit', 'view:files']);
+    expect(ids(rows).slice(0, 3)).toEqual(['stop', 'audit', 'view:chats']);
     expect(rows.map((r) => r.recent).slice(0, 3)).toEqual([true, true, false]);
   });
 

@@ -3,6 +3,8 @@ import { getJson, send, useRev, useStore } from '../store';
 import { Icon } from '../Icon';
 import { Empty, SystemArt } from './Empty';
 import { insertPrompt } from './Files';
+import { Rules } from './Rules';
+import { Section } from '../Section';
 import { FORMATS, type TokenFormat } from '../tokens';
 import type { DesignSystem as DS } from '../../../shared/design';
 
@@ -57,8 +59,15 @@ export function DesignSystem() {
   const match = (s: string) => !q || s.toLowerCase().includes(q.toLowerCase());
   const rebuild = () => send({ type: 'prompt', text: '/system' });
 
+  const rules = <Section view="system" id="rules" title="Rules"><Rules /></Section>;
+
   if (!ds) {
-    return <Empty art={<SystemArt />} title="No design system profile" text="Claude reads your library once and remembers its components, variables and text styles, so designs and reviews use them." action={figma ? { label: 'Build profile', onClick: () => insertPrompt('/system') } : undefined} />;
+    return (
+      <div className="side-scroll">
+        <Empty art={<SystemArt />} title="No design system profile" text="Claude reads your library once and remembers its components, variables and text styles, so designs and reviews use them." action={figma ? { label: 'Build profile', onClick: () => insertPrompt('/system') } : undefined} />
+        {rules}
+      </div>
+    );
   }
   return (
     <div className="side-scroll ds">
@@ -111,10 +120,11 @@ export function DesignSystem() {
       <ExportTokens ds={ds} />
       {ds.rules.length > 0 && (
         <section className="side-section">
-          <div className="side-label">Rules</div>
+          <div className="side-label">Detected rules</div>
           <ul className="rules">{ds.rules.map((r) => <li key={r}>{r}</li>)}</ul>
         </section>
       )}
+      {rules}
     </div>
   );
 }

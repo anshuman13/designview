@@ -3,6 +3,8 @@ import { getJson, postJson, send, useStore } from '../store';
 import { Icon } from '../Icon';
 import { Empty, FilesArt } from './Empty';
 import { Changes } from './Changes';
+import { Comments } from './Comments';
+import { Section } from '../Section';
 import { figmaNodeUrl } from '../../../shared/design';
 
 type Frame = { id: string; name: string; page: string; type: string; w: number; h: number };
@@ -21,7 +23,6 @@ export function Files() {
   const [thumbs, setThumbs] = useState<Record<string, string | null>>({});
   const [error, setError] = useState('');
   const [open, setOpen] = useState<Record<string, boolean>>({});
-  const [changes, setChanges] = useState(false);
 
   useEffect(() => {
     setOutline(null);
@@ -39,39 +40,41 @@ export function Files() {
   return (
     <div className="side-scroll">
       {figma ? (
-        <section className="side-section">
-          <div className="file-head">
-            <div className="file-name">{figma.name}</div>
-            <div className="file-acts">
-              <button onClick={() => postJson('/api/figma/show', {}).catch((e) => setError(e.message))}><Icon name="link-external" small /> Show in Chrome</button>
+        <>
+          <section className="side-section">
+            <div className="file-head">
+              <div className="file-name">{figma.name}</div>
+              <div className="file-acts">
+                <button onClick={() => postJson('/api/figma/show', {}).catch((e) => setError(e.message))}><Icon name="link-external" small /> Show in Chrome</button>
+              </div>
             </div>
-          </div>
-          {error && <div className="error-text">{error}{/Settings/.test(error) && <> <button className="link" onClick={() => window.dispatchEvent(new CustomEvent('designview:command', { detail: { id: 'page:settings' } }))}>Open Settings</button></>}</div>}
-          {!outline && !error && <div className="hint">Loading frames…</div>}
-          {outline?.pages.map((p) => (
-            <div key={p.id} className="page-group">
-              <button className="page-row" onClick={() => setOpen((o) => ({ ...o, [p.id]: !(o[p.id] ?? p.name !== 'Sketch') }))}>
-                <Icon name={(open[p.id] ?? p.name !== 'Sketch') ? 'chevron-down' : 'chevron-right'} small /> {p.name} <span className="count">{p.frames.length}</span>
-              </button>
-              {(open[p.id] ?? p.name !== 'Sketch') && (
-                <ul className="frame-list">
-                  {p.frames.map((f) => (
-                    <li key={f.id} className={focus === f.id ? 'focused' : ''}>
-                      <button className="frame" title={`${f.name} · ${f.w}×${f.h}\nShow in Figma`} onClick={() => showNode(f.id)}>
-                        <span className="thumb">{thumbs[f.id] ? <img src={thumbs[f.id]!} alt="" loading="lazy" /> : <Icon name="symbol-misc" small />}</span>
-                        <span className="frame-name">{f.name}</span>
-                      </button>
-                      <button className="icon-btn" title="Add to the prompt" onClick={() => insertPrompt(`${f.name} (${figmaNodeUrl(figma.key, f.id)})`)}><Icon name="add" small /></button>
-                    </li>
-                  ))}
-                  {!p.frames.length && <li className="hint">No frames on this page</li>}
-                </ul>
-              )}
-            </div>
-          ))}
-          <button className="page-row" onClick={() => setChanges((v) => !v)}><Icon name={changes ? 'chevron-down' : 'chevron-right'} small /> Changes</button>
-          {changes && <Changes />}
-        </section>
+            {error && <div className="error-text">{error}{/Settings/.test(error) && <> <button className="link" onClick={() => window.dispatchEvent(new CustomEvent('designview:command', { detail: { id: 'page:settings' } }))}>Open Settings</button></>}</div>}
+            {!outline && !error && <div className="hint">Loading frames…</div>}
+            {outline?.pages.map((p) => (
+              <div key={p.id} className="page-group">
+                <button className="page-row" onClick={() => setOpen((o) => ({ ...o, [p.id]: !(o[p.id] ?? p.name !== 'Sketch') }))}>
+                  <Icon name={(open[p.id] ?? p.name !== 'Sketch') ? 'chevron-down' : 'chevron-right'} small /> {p.name} <span className="count">{p.frames.length}</span>
+                </button>
+                {(open[p.id] ?? p.name !== 'Sketch') && (
+                  <ul className="frame-list">
+                    {p.frames.map((f) => (
+                      <li key={f.id} className={focus === f.id ? 'focused' : ''}>
+                        <button className="frame" title={`${f.name} · ${f.w}×${f.h}\nShow in Figma`} onClick={() => showNode(f.id)}>
+                          <span className="thumb">{thumbs[f.id] ? <img src={thumbs[f.id]!} alt="" loading="lazy" /> : <Icon name="symbol-misc" small />}</span>
+                          <span className="frame-name">{f.name}</span>
+                        </button>
+                        <button className="icon-btn" title="Add to the prompt" onClick={() => insertPrompt(`${f.name} (${figmaNodeUrl(figma.key, f.id)})`)}><Icon name="add" small /></button>
+                      </li>
+                    ))}
+                    {!p.frames.length && <li className="hint">No frames on this page</li>}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </section>
+          <Section view="files" id="comments" title="Comments"><Comments /></Section>
+          <Section view="files" id="versions" title="Versions"><Changes /></Section>
+        </>
       ) : (
         <Empty art={<FilesArt />} title="Attach a Figma file" text="Attach a file to open its frames here." action={{ label: 'Attach a Figma file', onClick: attachFigma }} />
       )}

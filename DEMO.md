@@ -278,6 +278,15 @@ Design runs: "Check frames against the design system after Claude edits Figma".
 
 Try: attach a real file, ask Claude in Chat mode to change a frame; a review card follows the reply.
 
+## 32. Three panels on the left
+
+The left rail has three panels: Chats (opens by default), File and Design system. File holds the frames
+list with collapsible Comments and Versions sections. Design system holds the profile with your Rules in a
+collapsible section at the bottom. Sections remember whether they are open. "View: Show File Comments" and
+"View: Show Design System Rules" in the palette jump straight to them.
+
+Try: Sample tour, then the File icon, open Comments; then the palette icon for the design system.
+
 ## Open questions for you
 
 - "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a

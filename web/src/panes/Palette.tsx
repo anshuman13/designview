@@ -13,10 +13,11 @@ const KEY = 'designview.palette';
 const MAX_ROWS = 12;
 
 const VIEWS = [
-  ['files', 'Files'],
   ['chats', 'Chats'],
-  ['comments', 'Comments'],
+  ['files', 'File'],
+  ['comments', 'File Comments'],
   ['system', 'Design System'],
+  ['rules', 'Design System Rules'],
 ];
 const CENTER = [['figma', 'Figma'], ['sketch', 'Sketch'], ['review', 'Review'], ['preview', 'Preview'], ['settings', 'Settings']];
 

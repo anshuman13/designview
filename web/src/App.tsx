@@ -10,9 +10,7 @@ import { Explorer } from './panes/Explorer';
 import { Chats } from './panes/Chats';
 import { Files, insertPrompt } from './panes/Files';
 import { Empty, PrototypeArt } from './panes/Empty';
-import { Comments } from './panes/Comments';
 import { DesignSystem } from './panes/DesignSystem';
-import { Rules } from './panes/Rules';
 import { Sketch } from './panes/Sketch';
 import { Review } from './panes/Review';
 import { Settings } from './panes/Settings';
@@ -23,21 +21,20 @@ import { ConnectPopover } from './ConnectPopover';
 import { McpItem } from './panes/McpStatus';
 import { SpendPill } from './SpendPill';
 import { Shortcuts } from './Shortcuts';
+import { openSection } from './Section';
 import { useCanvasContent } from './canvasContent';
 import { canNotify, toggleNotify, useNotify } from './notify';
 import './page.css';
 import './design.css';
 
-type View = 'files' | 'chats' | 'comments' | 'system' | 'rules' | 'explorer';
+type View = 'chats' | 'files' | 'system' | 'explorer';
 type Center = 'figma' | 'sketch' | 'review' | 'preview' | 'code';
 type Tab = 'chat' | 'figma' | 'sketch' | 'review' | 'more';
 
 const VIEWS: { id: View; icon: string; title: string; dev?: boolean }[] = [
-  { id: 'files', icon: 'file-media', title: 'Files' },
   { id: 'chats', icon: 'comment-discussion', title: 'Chats' },
-  { id: 'comments', icon: 'comment', title: 'Comments' },
-  { id: 'system', icon: 'symbol-color', title: 'Design System' },
-  { id: 'rules', icon: 'law', title: 'Rules' },
+  { id: 'files', icon: 'file-media', title: 'File' },
+  { id: 'system', icon: 'symbol-color', title: 'Design system' },
   { id: 'explorer', icon: 'files', title: 'Chat folder', dev: true },
 ];
 
@@ -116,7 +113,7 @@ export function App() {
   const [tab, setTab] = useState<Tab>('chat');
   const [center, setCenter] = useState<Center>('figma');
   const [sidebar, setSidebar] = useState(true);
-  const [view, setView] = useState<View>('files');
+  const [view, setView] = useState<View>('chats');
   const [phone, setPhone] = useState(false);
   const [settings, setSettings] = useState(false);
   const [opened, setOpened] = useState(false);
@@ -211,14 +208,27 @@ export function App() {
   useEffect(() => {
     const onCommand = (e: Event) => {
       const [kind, arg] = (e as CustomEvent<{ id: string }>).detail.id.split(':');
-      if (kind === 'view') { setView(arg as View); setSidebar(true); if (narrow()) setTab('more'); }
+      if (kind === 'view') {
+        if (arg === 'comments') openSection('files', 'comments');
+        else if (arg === 'rules') openSection('system', 'rules');
+        else { setView(arg as View); setSidebar(true); if (narrow()) setTab('more'); }
+      }
       else if (kind === 'page') { if (arg === 'settings') setSettings(true); else open(arg as Center); }
       else if (kind === 'focus') { if (!narrow()) toggleFocus(); }
       else if (kind === 'phone') setPhone((v) => !v);
       else if (kind === 'tab') setTab(arg as Tab);
     };
+    const onSection = (e: Event) => {
+      setView((e as CustomEvent<{ view: View }>).detail.view);
+      setSidebar(true);
+      if (narrow()) setTab('more');
+    };
     window.addEventListener('designview:command', onCommand);
-    return () => window.removeEventListener('designview:command', onCommand);
+    window.addEventListener('designview:section', onSection);
+    return () => {
+      window.removeEventListener('designview:command', onCommand);
+      window.removeEventListener('designview:section', onSection);
+    };
   }, []);
 
   const figma = session.figma;
@@ -264,7 +274,7 @@ export function App() {
               <button onClick={() => setSettings(true)}>Settings</button>
             </div>
           )}
-          {view === 'files' ? <Files /> : view === 'chats' ? <Chats /> : view === 'comments' ? <Comments /> : view === 'system' ? <DesignSystem /> : view === 'rules' ? <Rules /> : <Explorer />}
+          {view === 'chats' ? <Chats /> : view === 'files' ? <Files /> : view === 'system' ? <DesignSystem /> : <Explorer />}
         </section>
 
         <section className="editor-group pane code">
