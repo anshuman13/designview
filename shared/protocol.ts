@@ -112,6 +112,7 @@ export type LiveChat = {
   last?: string;
   edits?: { add: number; del: number };
   file?: string;
+  fileUrl?: string;
 };
 
 export type SavedSession = {
@@ -141,7 +142,8 @@ export type ClientMessage =
   | { type: 'close'; id: string }
   | { type: 'open_session'; sessionId: string }
   | { type: 'new_session'; cwd?: string }
-  | { type: 'new_chat'; url: string }
+  | { type: 'new_chat'; url?: string }
+  | { type: 'set_figma'; url: string }
   | { type: 'mcp_status' }
   | { type: 'mcp_reconnect'; name: string }
   | { type: 'mcp_toggle'; name: string; enabled: boolean };

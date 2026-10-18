@@ -56,6 +56,35 @@ describe('AgentSession modes', () => {
   });
 });
 
+describe('AgentSession setFigma', () => {
+  const file = { key: 'AbC123', name: 'Checkout', url: 'https://www.figma.com/design/AbC123' };
+
+  it('updates the session, posts a system line and adds file context to the next turn', async () => {
+    const { s } = fakeSession();
+    const seen: string[] = [];
+    s.onMessage((m) => m.type === 'session' && seen.push(m.session.figma?.key ?? ''));
+    s.setFigma(file);
+    expect(s.figmaFile).toEqual(file);
+    expect(s.state.session.figma).toEqual(file);
+    expect(seen).toContain('AbC123');
+    expect(s.state.events.at(-1)).toMatchObject({ kind: 'system', text: 'Attached Checkout' });
+    const queue = s as unknown as { inputQueue: Array<{ message: { content: unknown } }> };
+    Object.assign(s, { start: () => {} });
+    await s.prompt('make a card');
+    expect(JSON.stringify(queue.inputQueue[0].message.content)).toContain('AbC123');
+  });
+
+  it('refuses while a turn is running', async () => {
+    const { s } = fakeSession();
+    Object.assign(s, { start: () => {} });
+    await s.prompt('go');
+    s.setFigma(file);
+    expect(s.figmaFile).toBeNull();
+    expect(s.state.events.at(-1)).toMatchObject({ kind: 'system' });
+    expect((s.state.events.at(-1) as { text: string }).text).toMatch(/Wait/);
+  });
+});
+
 describe('AgentSession turns', () => {
   it('stops running when the only turn ends', () => {
     const { s, result } = fakeSession();

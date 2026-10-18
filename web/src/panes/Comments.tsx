@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getJson, postJson, useStore } from '../store';
 import { Icon } from '../Icon';
 import { Empty, ReviewArt } from './Empty';
-import { insertPrompt, showNode } from './Files';
+import { attachFigma, insertPrompt, showNode } from './Files';
 import { figmaNodeUrl } from '../../../shared/design';
 
 type User = { handle: string; img_url: string };
@@ -94,7 +94,7 @@ export function Comments() {
     load();
   }, [load]);
 
-  if (!figma) return <p className="muted cm-note">Start a chat from a Figma link to see its comments.</p>;
+  if (!figma) return <Empty art={<ReviewArt />} title="Attach a Figma file" text="Attach a file to see its comments." action={{ label: 'Attach a Figma file', onClick: attachFigma }} />;
   if (/access token/i.test(error)) return <Empty art={<ReviewArt />} title="Add a Figma token" text="Comments are read with your Figma personal access token." action={{ label: 'Open Settings', onClick: () => command('page:settings') }} />;
 
   const open = (threads ?? []).filter((t) => !t.resolved_at);

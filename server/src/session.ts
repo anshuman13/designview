@@ -70,6 +70,18 @@ export class AgentSession {
     this.approvals = new Approvals(this.state, (m) => this.emit(m));
   }
 
+  get figmaFile() {
+    return this.figma;
+  }
+
+  setFigma(figma: FigmaFile) {
+    if (this.state.session.running) return this.system('Wait for the current turn to finish before attaching a Figma file');
+    this.figma = figma;
+    this.setSession({ figma });
+    if (this.q) this.figmaNote = `A Figma file is now attached to this chat: "${figma.name}" (${figma.url}, file key ${figma.key}). Use the Figma MCP tools on that file from now on.`;
+    this.system(`Attached ${figma.name}`);
+  }
+
   onMessage(fn: (m: ServerMessage) => void) {
     this.listeners.add(fn);
     return () => this.listeners.delete(fn);
@@ -136,6 +148,7 @@ export class AgentSession {
 
   private rules = '';
   private rulesNote = '';
+  private figmaNote = '';
 
   private sampleBlocked() {
     if (this.figma?.key !== SAMPLE_KEY) return false;
@@ -282,6 +295,10 @@ export class AgentSession {
     if (this.rulesNote) {
       text = `${this.rulesNote}\n\n${text}`;
       this.rulesNote = '';
+    }
+    if (this.figmaNote) {
+      text = `${this.figmaNote}\n\n${text}`;
+      this.figmaNote = '';
     }
     this.inputQueue.push(userMessage(text, blocks));
     this.wake?.();

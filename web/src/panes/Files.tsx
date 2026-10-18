@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getJson, postJson, send, setUi, useStore } from '../store';
+import { getJson, postJson, send, useStore } from '../store';
 import { Icon } from '../Icon';
 import { Empty, FilesArt } from './Empty';
 import { figmaNodeUrl } from '../../../shared/design';
@@ -10,6 +10,7 @@ type Project = { id: string; name: string };
 type FileRow = { key: string; name: string; thumbnail_url: string; last_modified: string };
 
 export const insertPrompt = (text: string) => window.dispatchEvent(new CustomEvent('designview:insert', { detail: text }));
+export const attachFigma = () => window.dispatchEvent(new Event('designview:attach'));
 export const showNode = (nodeId: string) => postJson('/api/figma/focus', { nodeId }).catch(() => {});
 
 export function Files() {
@@ -68,7 +69,7 @@ export function Files() {
           ))}
         </section>
       ) : (
-        <Empty art={<FilesArt />} title="Start from a Figma file" text="Paste a Figma link to open its frames here." action={{ label: 'Start a chat from a Figma link', onClick: () => setUi({ repoPicker: true }) }} />
+        <Empty art={<FilesArt />} title="Attach a Figma file" text="Attach a file to open its frames here." action={{ label: 'Attach a Figma file', onClick: attachFigma }} />
       )}
       <TeamFiles />
     </div>

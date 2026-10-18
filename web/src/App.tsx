@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { connect, getJson, setUi, useStore } from './store';
+import { connect, getJson, useStore } from './store';
 import { Brief } from './panes/Brief';
 import { Terminal } from './panes/Terminal';
 import { CodePane } from './panes/CodePane';
@@ -7,7 +7,7 @@ import { BrowserPane } from './panes/BrowserPane';
 import { FileSwitcher } from './panes/FileSwitcher';
 import { Palette } from './panes/Palette';
 import { Explorer } from './panes/Explorer';
-import { Chats, NewChat } from './panes/Chats';
+import { Chats } from './panes/Chats';
 import { Files, insertPrompt } from './panes/Files';
 import { Empty, PrototypeArt } from './panes/Empty';
 import { Comments } from './panes/Comments';
@@ -18,6 +18,7 @@ import { Review } from './panes/Review';
 import { Settings } from './panes/Settings';
 import { Home } from './panes/Home';
 import { Icon } from './Icon';
+import { FilePill } from './AttachFile';
 import { ConnectPopover } from './ConnectPopover';
 import { McpItem } from './panes/McpStatus';
 import { SpendPill } from './SpendPill';
@@ -89,7 +90,6 @@ export function App() {
   const connected = useStore((s) => s.ui.connected);
   const pendingCount = useStore((s) => s.pending.length);
   const elsewhere = useStore((s) => s.live.filter((c) => c.id !== s.session.id && c.pending > 0).length);
-  const repoPicker = useStore((s) => s.ui.repoPicker);
   const session = useStore((s) => s.session);
   const status = useStore((s) => s.status);
   const events = useStore((s) => s.events);
@@ -175,7 +175,7 @@ export function App() {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) return;
       const k = e.key.toLowerCase();
-      if (k === 'o') { e.preventDefault(); setUi({ repoPicker: true }); }
+      if (k === 'o') { e.preventDefault(); window.dispatchEvent(new Event('designview:attach')); }
       if (k === '.' && !narrow()) { e.preventDefault(); toggleFocus(); }
       if (k === 'b') { e.preventDefault(); setSidebar((v) => !v); }
       if (k === 'j' && dev) { e.preventDefault(); setTerminal((v) => !v); }
@@ -208,9 +208,7 @@ export function App() {
       <Offline />
       <header className="topbar">
         <span className="brand"><span className="logo" />DesignView</span>
-        <button className="file-pill" title={figma ? `${figma.url}\nStart a chat on another file (⌘O)` : 'Start a chat from a Figma file (⌘O)'} onClick={() => setUi({ repoPicker: true })}>
-          <Icon name="file-media" small /> <span>{title}</span> <Icon name="chevron-down" small />
-        </button>
+        <FilePill />
         <span className="spacer" />
         <span className={`run-state ${session.running ? 'busy' : ''}`}>
           <Icon name={session.running ? 'loading' : 'circle-large-outline'} small spin={session.running} /> <span className="label">{session.running ? status : 'Idle'}</span>
@@ -299,7 +297,6 @@ export function App() {
       <FileSwitcher />
       <Palette />
       <Shortcuts />
-      {repoPicker && <NewChat />}
       {phone && <ConnectPopover onClose={() => setPhone(false)} />}
     </div>
   );

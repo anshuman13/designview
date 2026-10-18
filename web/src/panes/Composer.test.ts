@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accept, nextMode, buildHistory, contextPercent, filesEdited, ghostFor, rankCommands, rankFiles, remember, triggerAt } from './Composer';
+import { accept, figmaLinkIn, nextMode, buildHistory, contextPercent, filesEdited, ghostFor, rankCommands, rankFiles, remember, triggerAt } from './Composer';
 import type { ChatEvent } from '../../../shared/protocol';
 
 let n = 0;
@@ -123,5 +123,21 @@ describe('nextMode', () => {
     expect(nextMode('chat')).toBe('design');
     expect(nextMode('design')).toBe('review');
     expect(nextMode('review')).toBe('chat');
+  });
+});
+
+describe('figmaLinkIn', () => {
+  it('finds a design, file or proto link and its key', () => {
+    expect(figmaLinkIn('look at https://www.figma.com/design/AbC1234567/Checkout?node-id=1-2 please')).toEqual({ url: 'https://www.figma.com/design/AbC1234567/Checkout?node-id=1-2', key: 'AbC1234567', name: 'Checkout' });
+    expect(figmaLinkIn('https://www.figma.com/design/AbC1234567/Grocery-Cart')?.name).toBe('Grocery Cart');
+    expect(figmaLinkIn('https://www.figma.com/design/AbC1234567')?.name).toBe('this Figma file');
+    expect(figmaLinkIn('https://figma.com/file/AbC1234567')?.key).toBe('AbC1234567');
+    expect(figmaLinkIn('(https://www.figma.com/proto/AbC1234567/x).')?.url).toBe('https://www.figma.com/proto/AbC1234567/x');
+  });
+
+  it('ignores other text and links', () => {
+    expect(figmaLinkIn('make a card')).toBeNull();
+    expect(figmaLinkIn('https://example.com/design/AbC1234567')).toBeNull();
+    expect(figmaLinkIn('https://www.figma.com/community/file/123')).toBeNull();
   });
 });

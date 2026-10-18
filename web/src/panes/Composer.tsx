@@ -46,6 +46,13 @@ export const rankCommands = <T extends { name: string }>(commands: T[], query: s
 
 export const rankFiles = (files: string[], query: string, limit = MAX_ROWS) => rank(files, (f) => f, query, limit);
 
+export function figmaLinkIn(text: string): { url: string; key: string; name: string } | null {
+  const m = /https?:\/\/(?:[\w-]+\.)?figma\.com\/(?:design|file|proto)\/([A-Za-z0-9]{10,})(?:\/([^\s/?#]+))?[^\s]*/.exec(text);
+  if (!m) return null;
+  const name = m[2] ? decodeURIComponent(m[2]).replace(/[.,;:!?)\]]+$/, '').replace(/-/g, ' ') : 'this Figma file';
+  return { url: m[0].replace(/[.,;:!?)\]]+$/, ''), key: m[1], name };
+}
+
 export function accept(text: string, start: number, caret: number, insert: string) {
   const next = `${text.slice(0, start)}${insert} ${text.slice(caret)}`;
   return { text: next, caret: start + insert.length + 1 };
@@ -122,6 +129,7 @@ export function Composer() {
   const flow = useStore((s) => s.session.flow);
   const context = useStore((s) => s.session.context);
   const events = useStore((s) => s.events);
+  const hasFile = useStore((s) => !!s.session.figma);
 
   const [modeOpen, setModeOpen] = useState(false);
   const modePop = useRef<HTMLDivElement>(null);
@@ -129,6 +137,7 @@ export function Composer() {
   const [caret, setCaret] = useState(0);
   const [sel, setSel] = useState(0);
   const [dismissed, setDismissed] = useState('');
+  const [skipLink, setSkipLink] = useState('');
   const [files, setFiles] = useState<string[]>([]);
   const [stored, setStored] = useState(readStored);
   const [hist, setHist] = useState<Hist | null>(null);
@@ -159,6 +168,7 @@ export function Composer() {
   const open = items.length > 0;
   const history = useMemo(() => buildHistory(events, stored), [events, stored]);
   const ghost = !open && !shell && at === text.length ? ghostFor(text, history) : '';
+  const link = useMemo(() => (hasFile ? null : figmaLinkIn(text)), [hasFile, text]);
   const edited = useMemo(() => filesEdited(events), [events]);
   const pct = contextPercent(context);
   const setMode = (mode: FlowMode) => send({ type: 'set_flow', patch: { mode } });
@@ -324,6 +334,14 @@ export function Composer() {
         onDragLeave={() => setDrag(false)}
         onDrop={(e) => { setDrag(false); const list = imagesIn(e.dataTransfer.files); if (list.length) { e.preventDefault(); void attach(list); } }}
       >
+        {link && link.url !== skipLink && (
+          <div className="cp-attach">
+            <Icon name="file-media" small />
+            <span>Attach {link.name}?</span>
+            <button className="primary" onClick={() => send({ type: 'set_figma', url: link.url })}>Attach</button>
+            <button className="icon-btn" title="Dismiss" aria-label="Dismiss" onClick={() => setSkipLink(link.url)}><Icon name="close" small /></button>
+          </div>
+        )}
         {(imgs.length > 0 || busy > 0) && !shell && (
           <div className="cp-imgs">
             {imgs.map((i) => (

@@ -172,25 +172,52 @@ export async function scratchFolder() {
   return dir;
 }
 
-export async function folderFor(url: string) {
+function parseUrl(url: string) {
   const parsed = parseFigmaUrl(url);
   if (!parsed) throw new FigmaError('That is not a Figma file link. Copy the link from the Share button or the address bar.');
+  return parsed;
+}
+
+async function lookupName(key: string) {
+  try {
+    return (await figmaGet<{ name: string }>(`/files/${key}?depth=1`)).name;
+  } catch (err) {
+    if (err instanceof FigmaError && err.status === 412) throw err;
+    throw new FigmaError(`Could not open the file: ${(err as Error).message}`);
+  }
+}
+
+const figmaFile = (key: string, name: string): FigmaFile => ({ key, name, url: `https://www.figma.com/design/${key}` });
+
+export async function folderFor(url: string) {
+  const parsed = parseUrl(url);
   const existing = (await chatFolders()).find((f) => f.figma?.key === parsed.key);
   if (existing) {
     await installSkills(existing.dir);
     return existing.dir;
   }
-  let name = 'Untitled';
-  try {
-    name = (await figmaGet<{ name: string }>(`/files/${parsed.key}?depth=1`)).name;
-  } catch (err) {
-    if (err instanceof FigmaError && err.status === 412) throw err;
-    throw new FigmaError(`Could not open the file: ${(err as Error).message}`);
-  }
+  const name = await lookupName(parsed.key);
   const dir = path.join(CHATS_ROOT, `${slug(name)}-${parsed.key.slice(0, 6)}`);
   await mkdir(dir, { recursive: true });
-  const figma: FigmaFile = { key: parsed.key, name, url: `https://www.figma.com/design/${parsed.key}` };
-  await writeFile(path.join(dir, 'figma.json'), JSON.stringify(figma, null, 2));
+  await writeFile(path.join(dir, 'figma.json'), JSON.stringify(figmaFile(parsed.key, name), null, 2));
   await installSkills(dir);
   return dir;
+}
+
+const stamp = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
+
+export async function freshChatFolder(now = new Date()) {
+  const base = path.join(CHATS_ROOT, `chat-${stamp(now)}`);
+  let dir = base;
+  while (await stat(dir).then(() => true, () => false)) dir = `${base}-${Math.random().toString(36).slice(2, 6)}`;
+  await mkdir(dir, { recursive: true });
+  await installSkills(dir);
+  return dir;
+}
+
+export async function attachFolder(dir: string, url: string) {
+  const parsed = parseUrl(url);
+  const figma = figmaFile(parsed.key, await lookupName(parsed.key));
+  await writeFile(path.join(dir, 'figma.json'), JSON.stringify(figma, null, 2));
+  return figma;
 }

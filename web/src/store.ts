@@ -8,7 +8,6 @@ type UiState = {
   openFile: string | null;
   follow: boolean;
   switcherOpen: boolean;
-  repoPicker: boolean;
   revs: Record<string, number>;
   focus: string | null;
 };
@@ -22,7 +21,7 @@ let state: State = {
   pending: [],
   recentFiles: [],
   live: [],
-  ui: { connected: false, openFile: null, follow: false, switcherOpen: false, repoPicker: false, revs: {}, focus: null },
+  ui: { connected: false, openFile: null, follow: false, switcherOpen: false, revs: {}, focus: null },
 };
 
 const listeners = new Set<() => void>();

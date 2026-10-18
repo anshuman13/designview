@@ -17,10 +17,10 @@ import { notifyAway } from './notify.js';
 import { mcpConfig, mcpProbe } from './mcp.js';
 import { claudeStatus } from './doctor.js';
 import { listDir, listFiles, readFileWithOriginal } from './files.js';
-import { FigmaError, chatFolders, fileOutline, folderFor, images, isChatFolder, listComments, me, postComment, projectFiles, readFigma, replyComment, SAMPLE_KEY, scratchFolder, teamProjects, versions } from './figma.js';
+import { FigmaError, attachFolder, chatFolders, fileOutline, folderFor, freshChatFolder, images, isChatFolder, listComments, me, postComment, projectFiles, readFigma, replyComment, SAMPLE_KEY, scratchFolder, teamProjects, versions } from './figma.js';
 import { loadSample } from './sample.js';
 import { today } from './spend.js';
-import { publicSettings, saveSettings, settings } from './settings.js';
+import { CHATS_ROOT, publicSettings, saveSettings, settings } from './settings.js';
 import { addFigmaToClaude, figmaMcp } from './lean.js';
 import { pickDirection, readBoard, readSketch, writeBoard } from './sketch.js';
 import { readBuildChecks } from './buildcheck.js';
@@ -69,6 +69,7 @@ function summary(chat: AgentSession): LiveChat {
     last: replyLine(s.events),
     edits: sumEdits(s.events),
     file: s.session.figma?.name,
+    fileUrl: s.session.figma?.url,
   };
 }
 
@@ -88,7 +89,8 @@ async function createChat(cwd: string, resume?: string, title = '') {
   await chat.init();
   chat.onFocus = (nodeId) => {
     clients.forEach((c) => c.view === chat && c.send({ type: 'focus', nodeId }));
-    if (figma && figma.key !== SAMPLE_KEY) void settings().then((s) => (s.followClaude ? focusFigma(figma.key, nodeId, false) : null));
+    const current = chat.figmaFile;
+    if (current && current.key !== SAMPLE_KEY) void settings().then((s) => (s.followClaude ? focusFigma(current.key, nodeId, false) : null));
   };
   await chat.loadHistory();
   chat.onMessage((m) => {
@@ -198,8 +200,10 @@ function remember(chat: AgentSession) {
   writeFile(LAST, JSON.stringify({ sessionId, cwd: chat.cwd })).catch(() => {});
 }
 
+const DEFAULT_PROJECT = !process.argv[2] && !process.env.PROJECT_DIR;
+const firstChat = async () => createChat(DEFAULT_PROJECT ? await freshChatFolder() : PROJECT);
 const last = await readFile(LAST, 'utf8').then(JSON.parse).catch(() => null);
-lastViewed = await (last?.sessionId ? openSaved(last.sessionId).catch(() => createChat(PROJECT)) : createChat(PROJECT));
+lastViewed = await (last?.sessionId ? openSaved(last.sessionId).catch(firstChat) : firstChat());
 
 async function chatForUrl(url: string) {
   const dir = await folderFor(url);
@@ -435,8 +439,15 @@ wss.on('connection', (ws: WebSocket, req) => {
         pickDirection(chat.cwd, String(msg.screen), String(msg.direction)).catch(fail);
         break;
       case 'new_chat':
-        chatForUrl(String(msg.url)).then((c) => view(client, c), fail);
+        (msg.url?.trim() ? chatForUrl(msg.url) : freshChatFolder().then(createChat)).then((c) => view(client, c), fail);
         break;
+      case 'set_figma': {
+        const url = String(msg.url ?? '').trim();
+        const attach = !chat.figmaFile && isChatFolder(chat.cwd) && path.resolve(chat.cwd) !== path.resolve(CHATS_ROOT, 'scratch');
+        if (!attach) chatForUrl(url).then((c) => view(client, c), fail);
+        else attachFolder(chat.cwd, url).then((f) => (chat.setFigma(f), broadcastLive()), fail);
+        break;
+      }
       case 'interrupt':
         void chat.interrupt();
         break;

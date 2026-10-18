@@ -24,7 +24,7 @@ export function buildCommands(_models: { value: string; displayName: string }[] 
   return [
     ...VIEWS.map(([id, title]) => ({ id: `view:${id}`, label: `View: Show ${title}` })),
     ...CENTER.map(([id, title]) => ({ id: `page:${id}`, label: `Open: ${title}` })),
-    { id: 'repo', label: 'Chat: New Chat from a Figma File', key: '⌘O' },
+    { id: 'repo', label: 'Chat: Attach Figma File', key: '⌘O' },
     { id: 'design', label: 'Design: Toggle Design Run for the Next Message' },
     { id: 'review', label: 'Design: Review the Design' },
     { id: 'audit', label: 'Design: Audit the File' },
@@ -119,7 +119,7 @@ function perform(id: string) {
   else if (id === 'report') window.open(api('/api/report'), '_blank');
   else if (id === 'stop') send({ type: 'interrupt' });
   else if (id === 'file') setUi({ switcherOpen: true });
-  else if (id === 'repo') setUi({ repoPicker: true });
+  else if (id === 'repo') window.dispatchEvent(new Event('designview:attach'));
   else if (id === 'notify') toggleNotify();
   window.dispatchEvent(new CustomEvent('designview:command', { detail: { id } }));
 }
@@ -144,7 +144,7 @@ export function Palette() {
       setOpen((v) => !v);
       setQ('');
       setIdx(0);
-      setUi({ switcherOpen: false, repoPicker: false });
+      setUi({ switcherOpen: false });
     };
     const onOpen = () => { setOpen(true); setQ(''); setIdx(0); };
     window.addEventListener('keydown', onKey, true);

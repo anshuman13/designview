@@ -195,6 +195,16 @@ after sketch, review depth) live in the pill menu.
 
 Try: click the Chat pill, pick Design, open the menu again to see the options. Shift+Tab back to Chat.
 
+## 23. Attach a Figma file
+
+A chat no longer needs a Figma link to start. New chat opens an empty chat right away. Attach a file later
+from the top bar pill ("Attach Figma file": paste a link or pick a recent file), or paste a figma.com link
+in the composer and click Attach on the chip that appears. Claude gets the file on its next turn. ⌘O opens
+the same popover.
+
+Try: Chats, New chat. Click "Attach Figma file" in the top bar. Paste a Figma link in the composer to see
+the chip (no need to send).
+
 ## Open questions for you
 
 - "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a

@@ -124,3 +124,7 @@
 .cp-phase { color: var(--agent); }
 .cp-phase.passed { color: var(--ok); }
 .cp-phase.failed { color: var(--err); }
+
+.cp-attach { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; border-bottom: 1px solid var(--border); font-size: var(--text-sm); color: var(--fg-muted); }
+.cp-attach span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-attach button.primary { height: 24px; padding: 0 10px; }
