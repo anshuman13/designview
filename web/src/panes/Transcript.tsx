@@ -7,6 +7,7 @@ import { FileIcon } from './Explorer';
 import { insertPrompt, showNode } from './Files';
 import { useThumbs } from '../useThumbs';
 import { buildTranscript, duration, firstLine, groupTurns, relPath, stepLabel, type Block, type Item, type ToolResult, type ToolUse } from './steps';
+import { focusReview } from './reviewFocus';
 import { areaRows, canGoDeeper, isStale, runLabel, summarize, unposted } from './reviewRuns';
 import { reviewChecklist, type ReviewDoc } from '../../../shared/design';
 import type { ChatEvent } from '../../../shared/protocol';
@@ -275,7 +276,11 @@ function ReviewCard({ runAt }: { runAt: number }) {
       </div>
       <ul className="tr-review-rows">
         {areaRows(run).map((a) => (
-          <li key={a.name} className={a.pass ? 'pass' : 'fail'}>
+          <li
+            key={a.key}
+            className={a.pass ? 'pass' : 'fail link'}
+            {...(a.pass ? {} : { role: 'button', tabIndex: 0, title: 'Show findings', onClick: () => focusReview({ runId: run.id, area: a.key }), onKeyDown: (e: React.KeyboardEvent) => e.key === 'Enter' && focusReview({ runId: run.id, area: a.key }) })}
+          >
             <Icon name={a.pass ? 'check' : 'close'} small />
             <span>{a.name}</span>
             {a.failed && <span className="tr-review-failed">failed</span>}

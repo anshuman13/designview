@@ -109,6 +109,8 @@
 .tr-review-rows li { display: flex; align-items: center; gap: 8px; line-height: 20px; }
 .tr-review-rows li.pass .codicon { color: var(--ok); }
 .tr-review-rows li.fail .codicon { color: var(--err); }
+.tr-review-rows li.link { cursor: pointer; }
+.tr-review-rows li.link:hover span { text-decoration: underline; }
 .tr-review-failed { color: var(--err); }
 .tr-review-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .tr-review-stale { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; color: var(--fg-muted); }

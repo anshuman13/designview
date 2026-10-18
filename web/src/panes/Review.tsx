@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, getJson, postJson, send, useRev, useStore } from '../store';
 import { Icon } from '../Icon';
 import { AREAS, AREA_NAMES, PRESET_INFO, type Area, type CopyRun, type CritRun, type Finding, type ReviewDoc, type ReviewRun, reviewChecklist } from '../../../shared/design';
@@ -6,6 +6,7 @@ import { showNode, insertPrompt } from './Files';
 import { Empty, ReviewArt } from './Empty';
 import { CopyDetail, CritDetail } from './Crit';
 import { BuildCheck } from './BuildCheck';
+import { takeReviewFocus, type ReviewFocus } from './reviewFocus';
 import { KIND_LABEL, ago, mergeRuns, runLabel, shownPreset, summarize, unposted, type RunRow } from './reviewRuns';
 
 const SEV: Record<Finding['severity'], string> = { blocking: 'Blocking', major: 'Major', minor: 'Minor' };
@@ -23,11 +24,23 @@ export function Review({ dev = false }: { dev?: boolean }) {
   const [copy, setCopy] = useState<CopyRun[]>([]);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [build, setBuild] = useState(false);
+  const [focus, setFocus] = useState<(ReviewFocus & { at: number }) | null>(null);
 
   useEffect(() => { getJson<ReviewDoc>('/api/review').then(setDoc).catch(() => {}); }, [chat, reviewRev]);
   useEffect(() => { getJson<{ runs: CritRun[] }>('/api/crit').then((d) => setCrit(d.runs)).catch(() => {}); }, [chat, critRev]);
   useEffect(() => { getJson<{ runs: CopyRun[] }>('/api/copy').then((d) => setCopy(d.runs)).catch(() => {}); }, [chat, copyRev]);
   useEffect(() => { setOpen({}); }, [chat]);
+  useEffect(() => {
+    const take = () => {
+      const f = takeReviewFocus();
+      if (!f) return;
+      setFocus({ ...f, at: Date.now() });
+      setOpen((o) => ({ ...o, [f.runId]: true }));
+    };
+    take();
+    window.addEventListener('designview:review-focus', take);
+    return () => window.removeEventListener('designview:review-focus', take);
+  }, []);
 
   const rows = mergeRuns(doc.runs, crit, copy);
 
@@ -57,7 +70,7 @@ export function Review({ dev = false }: { dev?: boolean }) {
                   <span className="muted" title={when(row.at)}>{ago(row.at)}</span>
                   <span className="run-sum">{summarize(row)}</span>
                 </button>
-                {on && <div className="run-detail"><RunDetail row={row} doc={doc} onDoc={setDoc} /></div>}
+                {on && <div className="run-detail"><RunDetail row={row} doc={doc} onDoc={setDoc} focus={focus?.runId === row.id ? focus : undefined} /></div>}
               </li>
             );
           })}
@@ -73,13 +86,14 @@ export function Review({ dev = false }: { dev?: boolean }) {
   );
 }
 
-function RunDetail({ row, doc, onDoc }: { row: RunRow; doc: ReviewDoc; onDoc: (d: ReviewDoc) => void }) {
+function RunDetail({ row, doc, onDoc, focus }: { row: RunRow; doc: ReviewDoc; onDoc: (d: ReviewDoc) => void; focus?: { area: string; at: number } }) {
   if (row.kind === 'crit') return <CritDetail run={row.run} />;
   if (row.kind === 'copy') return <CopyDetail run={row.run} />;
-  return <ReviewDetail run={row.run} doc={doc} onDoc={onDoc} />;
+  return <ReviewDetail run={row.run} doc={doc} onDoc={onDoc} focus={focus} />;
 }
 
-function ReviewDetail({ run, doc, onDoc }: { run: ReviewRun; doc: ReviewDoc; onDoc: (d: ReviewDoc) => void }) {
+function ReviewDetail({ run, doc, onDoc, focus }: { run: ReviewRun; doc: ReviewDoc; onDoc: (d: ReviewDoc) => void; focus?: { area: string; at: number } }) {
+  const focusAt = (area: string) => (focus?.area === area ? focus.at : 0);
   const [posting, setPosting] = useState(false);
   const [note, setNote] = useState('');
   const [copied, setCopied] = useState(false);
@@ -115,20 +129,26 @@ function ReviewDetail({ run, doc, onDoc }: { run: ReviewRun; doc: ReviewDoc; onD
         {note && <span className="muted">{note}</span>}
       </div>
       <div className="review-grid">
-        <AreaCard title="Design system check" sub={run.checkError ?? (run.check.length ? `${run.check.length} issues` : 'No issues')} pass={!run.checkError && !run.check.some((f) => f.severity !== 'minor')} tokens={0} findings={run.check} grouped />
+        <AreaCard title="Design system check" sub={run.checkError ?? (run.check.length ? `${run.check.length} issues` : 'No issues')} pass={!run.checkError && !run.check.some((f) => f.severity !== 'minor')} tokens={0} findings={run.check} grouped focusAt={focusAt('check')} />
         {run.results.map((r) => (
-          <AreaCard key={r.area} title={r.area === 'all' ? 'Reviewer · all areas' : AREA_NAMES[r.area]} sub={r.error ? `Failed: ${r.error}` : r.summary} pass={r.pass} tokens={r.tokens} findings={r.findings} />
+          <AreaCard key={r.area} title={r.area === 'all' ? 'Reviewer · all areas' : AREA_NAMES[r.area]} sub={r.error ? `Failed: ${r.error}` : r.summary} pass={r.pass} tokens={r.tokens} findings={r.findings} focusAt={focusAt(r.area)} />
         ))}
       </div>
     </>
   );
 }
 
-function AreaCard({ title, sub, pass, tokens, findings, grouped = false }: { title: string; sub: string; pass: boolean; tokens: number; findings: Finding[]; grouped?: boolean }) {
+function AreaCard({ title, sub, pass, tokens, findings, grouped = false, focusAt = 0 }: { title: string; sub: string; pass: boolean; tokens: number; findings: Finding[]; grouped?: boolean; focusAt?: number }) {
   const [open, setOpen] = useState(!pass);
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!focusAt) return;
+    setOpen(true);
+    ref.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }, [focusAt]);
   const shown = grouped ? [...findings].sort((a, b) => AREAS.indexOf(a.area as Area) - AREAS.indexOf(b.area as Area)) : findings;
   return (
-    <section className={`area-card ${pass ? 'pass' : 'fail'}`}>
+    <section ref={ref} className={`area-card ${pass ? 'pass' : 'fail'}${focusAt ? ' focused' : ''}`}>
       <header onClick={() => setOpen((v) => !v)}>
         <Icon name={pass ? 'pass-filled' : 'error'} />
         <div className="area-title">

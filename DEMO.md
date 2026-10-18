@@ -194,6 +194,10 @@ stays) and chat titles, and lists every matching recent chat instead of the last
 is still there. Drafts live in memory only and go away on reload. A new chat that was never sent closes when you leave
 it, and its draft goes with it.
 
+**Jump to findings.** On a review card, failed areas are links. Click one (or Tab to it and press Enter) to open the
+Review pane on that run with the area's card expanded, outlined and scrolled into view. Try Typography on the sample
+tour's review card.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.

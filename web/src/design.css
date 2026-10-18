@@ -128,6 +128,7 @@
 .area-card header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; }
 .area-card.pass header > .codicon:first-child { color: var(--ok); }
 .area-card.fail header > .codicon:first-child { color: var(--err); }
+.area-card.focused { outline: 2px solid var(--accent); outline-offset: 2px; }
 .area-title { flex: 1; min-width: 0; }
 .area-title .t { font-weight: 600; font-size: var(--text-lg); }
 .area-title .s { color: var(--fg-muted); font-size: var(--text-sm); }
