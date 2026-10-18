@@ -4,7 +4,7 @@ import { withReviews } from './transcript.js';
 
 const run = { id: 'r1', kind: 'audit', at: 1234, round: 0, preset: 'check', frames: ['1:2'], check: [], results: [], tokens: 0, costUsd: 0 };
 
-vi.mock('./review.js', async (orig) => ({ ...(await orig<typeof import('./review.js')>()), runReview: vi.fn(async () => run) }));
+vi.mock('./review.js', async (orig) => ({ ...(await orig<typeof import('./review.js')>()), runReview: vi.fn(async (i: { onArea?: (a: string, s: string) => void }) => { i.onArea?.('check', 'pass'); i.onArea?.('all', 'running'); return run; }) }));
 vi.mock('./figma.js', async (orig) => ({ ...(await orig<typeof import('./figma.js')>()), fileOutline: vi.fn(async () => ({ pages: [{ frames: [{ id: '1:2' }] }] })) }));
 
 describe('review events', () => {
@@ -13,6 +13,15 @@ describe('review events', () => {
     s.setFigma({ key: 'AbC123', name: 'Checkout', url: 'https://www.figma.com/design/AbC123' });
     await (s as unknown as { command: (c: string, a: string, r: string) => Promise<void> }).command('audit', '', '/audit');
     expect(s.state.events.find((e) => e.kind === 'review')).toMatchObject({ kind: 'review', runAt: 1234 });
+  });
+
+  it('tracks reviewer progress in the flow state', () => {
+    const s = new AgentSession('/tmp/project', null);
+    const onArea = (s as unknown as { onArea: (a: string, st: string) => void }).onArea;
+    onArea('check', 'running');
+    onArea('all', 'running');
+    onArea('check', 'pass');
+    expect(s.state.session.flow.reviewers).toEqual([{ area: 'check', state: 'pass' }, { area: 'all', state: 'running' }]);
   });
 
   it('replays saved runs in time order on history load', () => {

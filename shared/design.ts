@@ -37,7 +37,10 @@ export type FlowState = {
   areas: Area[];
   stopAfterSketch: boolean;
   tokens: number;
+  reviewers?: ReviewerState[];
 };
+
+export type ReviewerState = { area: Area | 'all' | 'check'; state: 'running' | 'pass' | 'fail' | 'error' };
 
 export type Severity = 'blocking' | 'major' | 'minor';
 
@@ -138,6 +141,7 @@ export const flowOff = (s: Pick<Settings, 'preset' | 'areas' | 'stopAfterSketch'
   areas: s.areas,
   stopAfterSketch: s.stopAfterSketch,
   tokens: 0,
+  reviewers: [],
 });
 
 export const FLOW_ACTIVE: FlowPhase[] = ['plan', 'sketch', 'system', 'design', 'review', 'fix'];

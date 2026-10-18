@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { failedAreas, outline, reviewersFor, toFix } from './review.js';
+import os from 'node:os';
+import path from 'node:path';
+import { mkdtemp } from 'node:fs/promises';
+import { describe, expect, it, vi } from 'vitest';
+import { failedAreas, outline, reviewersFor, runReview, toFix } from './review.js';
+
+vi.mock('./figma.js', () => ({ nodes: vi.fn(async () => ({ nodes: {} })), images: vi.fn(async () => ({})), download: vi.fn() }));
+vi.mock('./lean.js', () => ({ lean: vi.fn(async () => ({ data: { pass: true, summary: 'ok', findings: [] }, tokens: 1, costUsd: 0, text: '' })) }));
 
 describe('reviewersFor', () => {
   it('runs no model for check', () => expect(reviewersFor('check', ['color'], null)).toEqual([]));
@@ -35,5 +41,16 @@ describe('outline', () => {
     expect(text).toContain('TEXT "Title" 1:2 · 24px 700 "Hello"');
     expect(text).toContain('of Button/Primary');
     expect(text).not.toContain('inner');
+  });
+});
+
+describe('runReview progress', () => {
+  it('reports the check then the quick reviewer', async () => {
+    const { nodes } = await import('./figma.js');
+    vi.mocked(nodes).mockResolvedValueOnce({ nodes: { '1:1': { document: { id: '1:1', name: 'Home', type: 'FRAME', children: [] }, components: {} } } } as never);
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'review-'));
+    const calls: string[] = [];
+    await runReview({ dir, fileKey: 'k', frames: ['1:1'], preset: 'quick', areas: [], round: 1, kind: 'review', onArea: (a, s) => calls.push(`${a}:${s}`) });
+    expect(calls).toEqual(['check:running', 'check:pass', 'all:running', 'all:pass']);
   });
 });

@@ -1,6 +1,7 @@
+import { Fragment } from 'react';
 import { send, useStore } from '../store';
 import { Icon } from '../Icon';
-import { FLOW_ACTIVE, PRESET_INFO, type FlowPhase, type FlowState } from '../../../shared/design';
+import { AREA_NAMES, FLOW_ACTIVE, PRESET_INFO, type FlowPhase, type FlowState, type ReviewerState } from '../../../shared/design';
 
 const STEPS: Array<{ label: string; phases: FlowPhase[] }> = [
   { label: 'Plan', phases: ['plan'] },
@@ -9,7 +10,10 @@ const STEPS: Array<{ label: string; phases: FlowPhase[] }> = [
   { label: 'Review', phases: ['review', 'fix'] },
 ];
 
-export type RunRow = { label: string; state: 'done' | 'now' | 'idle'; detail?: string };
+export type RunSubRow = { label: string; state: ReviewerState['state'] };
+export type RunRow = { label: string; state: 'done' | 'now' | 'idle'; detail?: string; subs?: RunSubRow[] };
+
+const areaLabel = (a: ReviewerState['area']) => (a === 'check' ? 'Design system check' : a === 'all' ? 'All areas' : AREA_NAMES[a]);
 
 export function runRows(flow: FlowState): { title: string; rows: RunRow[]; tokens: number; waiting: boolean } | null {
   const phase = flow.phase;
@@ -21,7 +25,7 @@ export function runRows(flow: FlowState): { title: string; rows: RunRow[]; token
     : phase === 'system' ? 'Reading the design system'
     : 'Running';
   const steps = flow.kind === 'sketch' ? STEPS.slice(0, 2) : STEPS;
-  const rows = steps.map((s, i): RunRow => (i < at ? { label: s.label, state: 'done' } : i === at ? { label: s.label, state: 'now', detail } : { label: s.label, state: 'idle' }));
+  const rows = steps.map((s, i): RunRow => (i < at ? { label: s.label, state: 'done' } : i === at ? { label: s.label, state: 'now', detail, ...(s.label === 'Review' && flow.reviewers?.length ? { subs: flow.reviewers.map((r) => ({ label: areaLabel(r.area), state: r.state })) } : {}) } : { label: s.label, state: 'idle' }));
   return { title: flow.kind === 'sketch' ? 'Sketch run' : 'Design run', rows, tokens: flow.tokens, waiting: phase === 'pick' };
 }
 
@@ -38,11 +42,20 @@ export function RunCard() {
       </div>
       <ol className="run-rows">
         {run.rows.map((r) => (
-          <li key={r.label} className={r.state}>
-            <span className="mark">{r.state === 'done' ? <Icon name="check" small /> : <i className="dot" />}</span>
-            <span>{r.label}</span>
-            {r.detail && <span className="detail">{r.detail}</span>}
-          </li>
+          <Fragment key={r.label}>
+            <li className={r.state}>
+              <span className="mark">{r.state === 'done' ? <Icon name="check" small /> : <i className="dot" />}</span>
+              <span>{r.label}</span>
+              {r.detail && <span className="detail">{r.detail}</span>}
+            </li>
+            {r.subs?.map((s) => (
+              <li key={s.label} className={`sub ${s.state}`}>
+                <span className="mark">{s.state === 'running' ? <Icon name="loading" small spin /> : s.state === 'pass' ? <Icon name="check" small /> : s.state === 'fail' ? <Icon name="close" small /> : null}</span>
+                <span>{s.label}</span>
+                {s.state === 'error' && <span className="detail">failed</span>}
+              </li>
+            ))}
+          </Fragment>
         ))}
       </ol>
       <div className="run-acts">

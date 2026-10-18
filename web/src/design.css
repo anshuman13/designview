@@ -88,6 +88,9 @@
 .run-rows .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .run-rows li.done { color: var(--ok); }
 .run-rows li.now { color: var(--accent); font-weight: 600; }
+.run-rows li.sub { padding-left: 24px; color: var(--fg-muted); font-weight: 400; }
+.run-rows li.sub.pass .mark { color: var(--ok); }
+.run-rows li.sub.fail .mark, .run-rows li.sub.error .detail { color: var(--err); }
 .run-rows .detail { color: var(--fg-muted); font-weight: 400; }
 .run-acts { display: flex; justify-content: flex-end; }
 .run-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }

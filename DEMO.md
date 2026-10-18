@@ -151,6 +151,10 @@ starts another new chat.
 idle status and the phone QR button are hidden. The bottom bar reads Chat, Figma, Sketch, Review, More (Figma, Sketch
 and Review only when they have content), and the duplicate tab strip above the canvas is hidden.
 
+**Reviewer progress.** During a design run's review phase, the run card lists each reviewer under the Review row: the
+design system check first, then each area (or "All areas" for Quick), with a spinner while it runs and a pass, fail or
+"failed" mark when it ends.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.

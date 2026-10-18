@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { AREAS, AREA_NAMES, MODELS, type Area, type AreaResult, type DesignDoc, type DesignSystem, type Finding, type ReviewDoc, type ReviewPreset, type ReviewRun } from '../../shared/design.js';
+import { AREAS, AREA_NAMES, MODELS, type Area, type AreaResult, type DesignDoc, type DesignSystem, type Finding, type ReviewDoc, type ReviewPreset, type ReviewRun, type ReviewerState } from '../../shared/design.js';
 import { checkFrames } from './check.js';
 import { readRules, rulesBlock } from './rules.js';
 import { download, images, nodes } from './figma.js';
@@ -115,6 +115,7 @@ export type ReviewInput = {
   onlyFailed?: Area[] | null;
   signal?: AbortSignal;
   onProgress?: (text: string) => void;
+  onArea?: (area: ReviewerState['area'], state: ReviewerState['state']) => void;
 };
 
 export async function runReview(input: ReviewInput): Promise<ReviewRun> {
@@ -124,6 +125,7 @@ export async function runReview(input: ReviewInput): Promise<ReviewRun> {
   const plan = await readFile(path.join(dir, 'plan.md'), 'utf8').catch(() => '');
 
   input.onProgress?.('Reading the frames from Figma');
+  input.onArea?.('check', 'running');
   const docs: Array<{ id: string; document: any; components: Record<string, any> }> = [];
   try {
     for (let i = 0; i < frames.length; i += 20) {
@@ -134,6 +136,7 @@ export async function runReview(input: ReviewInput): Promise<ReviewRun> {
   } catch (err) {
     run.checkError = (err as Error).message;
   }
+  input.onArea?.('check', run.checkError ? 'error' : run.check.some((f) => f.severity !== 'minor') ? 'fail' : 'pass');
 
   const reviewers = reviewersFor(input.preset, input.areas, input.onlyFailed ?? null);
   if (reviewers.length && docs.length) {
@@ -154,7 +157,17 @@ export async function runReview(input: ReviewInput): Promise<ReviewRun> {
     }
     const outlines = docs.map((d) => outline(d.document, d.components)).join('\n\n');
     input.onProgress?.(`Reviewing with ${reviewers.length === 1 ? 'one reviewer' : `${reviewers.length} reviewers`}`);
-    run.results = await Promise.all(reviewers.map((area) => reviewOne(area, { dir, plan, ds, outlines, shots, check: run.check, signal: input.signal })));
+    run.results = await Promise.all(reviewers.map(async (area) => {
+      input.onArea?.(area, 'running');
+      try {
+        const r = await reviewOne(area, { dir, plan, ds, outlines, shots, check: run.check, signal: input.signal });
+        input.onArea?.(area, r.error ? 'error' : r.pass ? 'pass' : 'fail');
+        return r;
+      } catch (err) {
+        input.onArea?.(area, 'error');
+        throw err;
+      }
+    }));
   }
   run.tokens = run.results.reduce((n, r) => n + r.tokens, 0);
   run.costUsd = run.results.reduce((n, r) => n + r.costUsd, 0);

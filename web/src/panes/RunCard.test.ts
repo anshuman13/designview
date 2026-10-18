@@ -30,4 +30,19 @@ describe('runRows', () => {
     expect(run.rows[1]).toMatchObject({ label: 'Sketch', state: 'now' });
     expect(run.rows[2].state).toBe('idle');
   });
+
+  it('lists reviewers under the Review row', () => {
+    const run = runRows(flow('review', { reviewers: [{ area: 'check', state: 'pass' }, { area: 'all', state: 'running' }, { area: 'spacing', state: 'fail' }] }))!;
+    expect(run.rows[3].subs).toEqual([
+      { label: 'Design system check', state: 'pass' },
+      { label: 'All areas', state: 'running' },
+      { label: 'Spacing and layout', state: 'fail' },
+    ]);
+    expect(run.rows[2].subs).toBeUndefined();
+  });
+
+  it('has no sub-rows without reviewers or outside Review', () => {
+    expect(runRows(flow('review'))!.rows[3].subs).toBeUndefined();
+    expect(runRows(flow('design', { reviewers: [{ area: 'check', state: 'running' }] }))!.rows[2].subs).toBeUndefined();
+  });
 });

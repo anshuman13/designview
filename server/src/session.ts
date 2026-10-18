@@ -3,7 +3,7 @@ import path from 'node:path';
 import { writeFile } from 'node:fs/promises';
 import { query, getSessionMessages, type Query, type SDKMessage, type SDKUserMessage, type PermissionMode, type HookInput, type HookJSONOutput, type PermissionResult } from '@anthropic-ai/claude-agent-sdk';
 import { COMPACT_AT, type ChatEvent, type ServerMessage, type ServerState, type SessionInfo, type SpendPart } from '../../shared/protocol.js';
-import { AREAS, FLOW_ACTIVE, FLOW_MODES, MODELS, PRESETS, PRESET_INFO, flowOff, nodeIdsIn, type Area, type FigmaFile, type FlowKind, type FlowPhase, type FlowState, type ReviewPreset, type ReviewRun } from '../../shared/design.js';
+import { AREAS, FLOW_ACTIVE, FLOW_MODES, MODELS, PRESETS, PRESET_INFO, flowOff, nodeIdsIn, type Area, type FigmaFile, type FlowKind, type FlowPhase, type FlowState, type ReviewPreset, type ReviewRun, type ReviewerState } from '../../shared/design.js';
 import { Approvals } from './approvals.js';
 import { STATUS_REMINDER, agentOptions, userMessage } from './options.js';
 import { mcpFrom } from './mcp.js';
@@ -361,6 +361,11 @@ export class AgentSession {
     return p !== null && (FLOW_ACTIVE.includes(p) || p === 'pick');
   }
 
+  private onArea = (area: ReviewerState['area'], state: ReviewerState['state']) => {
+    const list = this.state.session.flow.reviewers ?? [];
+    this.setFlow({ reviewers: list.some((r) => r.area === area) ? list.map((r) => (r.area === area ? { area, state } : r)) : [...list, { area, state }] });
+  };
+
   private setFlow(patch: Partial<FlowState>) {
     this.setSession({ flow: { ...this.state.session.flow, ...patch } });
   }
@@ -428,7 +433,8 @@ export class AgentSession {
     if (!frames.length) frames = (await readDesign(this.cwd))?.frames.map((f) => f.nodeId) ?? [];
     if (!frames.length) return this.system('Review: paste frame links after /review, or run /design first');
     return this.background(`Reviewing ${frames.length} ${frames.length === 1 ? 'frame' : 'frames'} (${PRESET_INFO[preset].label})`, async (signal) => {
-      const run = await runReview({ dir: this.cwd, fileKey: this.figma!.key, frames, preset, areas: this.state.session.flow.areas, round: 1, kind: 'review', signal, onProgress: (t) => this.setStatus(t) });
+      const run = await runReview({ dir: this.cwd, fileKey: this.figma!.key, frames, preset, areas: this.state.session.flow.areas, round: 1, kind: 'review', signal, onProgress: (t) => this.setStatus(t), onArea: this.onArea });
+      this.setFlow({ reviewers: [] });
       this.recordBackground('review', run);
       this.reviewDone(run);
     });
@@ -497,7 +503,7 @@ export class AgentSession {
 
   private endFlow(phase: 'done' | 'stopped', note: string) {
     this.work?.abort();
-    this.setFlow({ phase });
+    this.setFlow({ phase, reviewers: [] });
     this.system(note);
     if (this.state.session.model !== MODELS.work) void this.setModel(MODELS.work);
     if (this.state.session.permissionMode === 'plan') void this.setPermissionMode('auto', true);
@@ -577,13 +583,14 @@ export class AgentSession {
   private async review(frames: string[], round: number, onlyFailed: Area[] | null, kind: 'review' | 'verify') {
     const flow = this.state.session.flow;
     const preset = kind === 'verify' ? 'check' : flow.preset;
-    this.setFlow({ phase: 'review', round });
+    this.setFlow({ phase: 'review', round, reviewers: [] });
     this.pushEvent({ id: randomUUID(), kind: 'user', text: kind === 'verify' ? 'Final check' : `Review ${round} · ${PRESET_INFO[preset].label}`, at: Date.now(), phase: 'review' });
     let run: ReviewRun | null = null;
     await this.background(kind === 'verify' ? 'Checking the fixes' : 'Reviewing the design', async (signal) => {
-      run = await runReview({ dir: this.cwd, fileKey: this.figma!.key, frames, preset, areas: flow.areas, round, kind, onlyFailed, signal, onProgress: (t) => this.setStatus(t) });
+      run = await runReview({ dir: this.cwd, fileKey: this.figma!.key, frames, preset, areas: flow.areas, round, kind, onlyFailed, signal, onProgress: (t) => this.setStatus(t), onArea: this.onArea });
     });
     if (this.state.session.flow.phase !== 'review') return;
+    this.setFlow({ reviewers: [] });
     if (!run) return this.endFlow('stopped', 'Design run stopped: the review could not run');
     const done: ReviewRun = run;
     this.lastRun = done;
