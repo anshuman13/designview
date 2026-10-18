@@ -165,6 +165,11 @@ the run. Stop ends it.
 **Copy tones.** Type `/copy` in the composer to see three rows: `/copy` (friendly), `/copy tone:formal` and
 `/copy tone:neutral`. Pick one with Tab or a click; it fills in the command with the selected frames.
 
+**Free check on nested edits.** When Claude edits a layer inside a frame (a text node, a button), the free check after
+the turn finds the top-level frame that holds it with one Figma REST call and checks only that frame. Before, a nested
+edit made it check the whole file. Try it with real-run step 2: ask for a text change inside one frame, and the review
+card lists only that frame.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.

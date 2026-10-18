@@ -47,6 +47,19 @@ export async function fileOutline(key: string): Promise<Outline> {
   return { name: f.name as string, lastModified: f.lastModified as string, thumbnail: f.thumbnailUrl as string, pages };
 }
 
+const holds = (n: any, ids: string[]): boolean => ids.includes(n.id) || (n.children ?? []).some((c: any) => holds(c, ids));
+
+export function topFramesFor(doc: any, frameIds: string[], ids: string[]): string[] {
+  const tops = (doc?.children ?? []).flatMap((p: any) => p.children ?? []);
+  return frameIds.filter((id) => tops.some((n: any) => n.id === id && holds(n, ids)));
+}
+
+export async function framesContaining(key: string, frameIds: string[], ids: string[]): Promise<string[]> {
+  if (ids.every((id) => frameIds.includes(id))) return frameIds.filter((f) => ids.includes(f));
+  const f = await figmaGet<any>(`/files/${key}?ids=${encodeURIComponent(ids.slice(0, 50).join(','))}`);
+  return topFramesFor(f.document, frameIds, ids);
+}
+
 const imageCache = new Map<string, { at: number; urls: Record<string, string | null> }>();
 
 export async function images(key: string, ids: string[], scale = 0.5, format: 'png' | 'jpg' = 'png', version?: string, fresh = false) {

@@ -729,9 +729,9 @@ export class AgentSession {
     if (!(await settings().catch(() => null))?.autoCheck) return;
     try {
       this.setStatus('Checking edited frames');
-      const { fileOutline } = await import('./figma.js');
+      const { fileOutline, framesContaining } = await import('./figma.js');
       const all = (await fileOutline(key)).pages.flatMap((p) => p.frames.map((f) => f.id));
-      const hit = all.filter((id) => touched.includes(id));
+      const hit = await framesContaining(key, all, touched).catch(() => all.filter((id) => touched.includes(id)));
       const frames = hit.length ? hit : all;
       if (!frames.length) return;
       const run = await runReview({ dir: this.cwd, fileKey: key, frames, preset: 'check', areas: [], round: 0, kind: 'audit' });

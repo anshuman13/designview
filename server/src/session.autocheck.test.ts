@@ -2,12 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentSession } from './session.js';
 import { runReview } from './review.js';
 import { settings } from './settings.js';
+import { framesContaining } from './figma.js';
 
 const run = { id: 'r1', kind: 'audit', at: 1234, round: 0, preset: 'check', frames: ['1:2'], check: [], results: [], tokens: 0, costUsd: 0 };
 
 vi.mock('./review.js', async (orig) => ({ ...(await orig<typeof import('./review.js')>()), runReview: vi.fn(async () => run) }));
 vi.mock('./settings.js', async (orig) => ({ ...(await orig<typeof import('./settings.js')>()), settings: vi.fn(async () => ({ autoCheck: true })) }));
-vi.mock('./figma.js', async (orig) => ({ ...(await orig<typeof import('./figma.js')>()), fileOutline: vi.fn(async () => ({ pages: [{ frames: [{ id: '1:2' }, { id: '3:4' }] }] })) }));
+vi.mock('./figma.js', async (orig) => ({ ...(await orig<typeof import('./figma.js')>()), fileOutline: vi.fn(async () => ({ pages: [{ frames: [{ id: '1:2' }, { id: '3:4' }] }] })), framesContaining: vi.fn(async (_k: string, all: string[], ids: string[]) => all.filter((f) => ids.includes(f))) }));
 
 const flush = () => new Promise((r) => setTimeout(r, 10));
 
@@ -34,6 +35,14 @@ describe('auto check after chat edits', () => {
     await flush();
     expect(runReview).toHaveBeenCalledWith(expect.objectContaining({ preset: 'check', kind: 'audit', round: 0, frames: ['3:4'] }));
     expect(s.state.events.find((e) => e.kind === 'review')).toMatchObject({ runAt: 1234 });
+  });
+
+  it('checks the frame that contains a touched nested id', async () => {
+    vi.mocked(framesContaining).mockResolvedValueOnce(['1:2']);
+    chatTurn('mcp__figma__use_figma');
+    await flush();
+    expect(framesContaining).toHaveBeenCalledWith('AbC123', ['1:2', '3:4'], ['3:4']);
+    expect(runReview).toHaveBeenCalledWith(expect.objectContaining({ frames: ['1:2'] }));
   });
 
   it('does not run when autoCheck is off', async () => {
