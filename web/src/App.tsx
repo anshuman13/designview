@@ -46,8 +46,8 @@ const CENTER: { id: Center; icon: string; label: string; dev?: boolean }[] = [
   { id: 'code', icon: 'code', label: 'Files', dev: true },
 ];
 
-const PHASE_TAB: Record<string, Center> = { sketch: 'sketch', pick: 'sketch', design: 'figma', fix: 'figma', review: 'review' };
-const PHASE_LABEL: Record<string, string> = { plan: 'Plan', sketch: 'Sketch', pick: 'Pick a direction', system: 'Design system', design: 'Design', review: 'Review', fix: 'Fix', done: 'Done', stopped: 'Stopped' };
+const PHASE_TAB: Record<string, Center> = { sketch: 'sketch', pick: 'sketch', file: 'figma', design: 'figma', fix: 'figma', review: 'review' };
+const PHASE_LABEL: Record<string, string> = { plan: 'Plan', sketch: 'Sketch', pick: 'Pick a direction', file: 'Attach a Figma file', system: 'Design system', design: 'Design', review: 'Review', fix: 'Fix', done: 'Done', stopped: 'Stopped' };
 const narrow = () => window.innerWidth <= 900;
 
 function stored(key: string, fallback: number) {

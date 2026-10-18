@@ -22,7 +22,7 @@ export const PRESET_INFO: Record<ReviewPreset, { label: string; detail: string; 
 
 export const MODELS = { plan: 'claude-opus-5-5', work: 'claude-sonnet-5-5' } as const;
 
-export type FlowPhase = 'plan' | 'sketch' | 'pick' | 'system' | 'design' | 'review' | 'fix' | 'done' | 'stopped';
+export type FlowPhase = 'plan' | 'sketch' | 'pick' | 'file' | 'system' | 'design' | 'review' | 'fix' | 'done' | 'stopped';
 export type FlowKind = 'design' | 'sketch';
 
 export const FLOW_MODES = ['chat', 'design', 'review'] as const;

@@ -31,6 +31,13 @@ describe('runRows', () => {
     expect(run.rows[2].state).toBe('idle');
   });
 
+  it('waits on the Design row when there is no Figma file', () => {
+    const run = runRows(flow('file'))!;
+    expect(run.waiting).toBe(true);
+    expect(run.rows.map((r) => r.state)).toEqual(['done', 'done', 'now', 'idle']);
+    expect(run.rows[2]).toMatchObject({ label: 'Design', detail: 'Waiting for a Figma file' });
+  });
+
   it('lists reviewers under the Review row', () => {
     const run = runRows(flow('review', { reviewers: [{ area: 'check', state: 'pass' }, { area: 'all', state: 'running' }, { area: 'spacing', state: 'fail' }] }))!;
     expect(run.rows[3].subs).toEqual([

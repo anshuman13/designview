@@ -83,6 +83,7 @@ export class AgentSession {
     this.setSession({ figma });
     if (this.q) this.figmaNote = `A Figma file is now attached to this chat: "${figma.name}" (${figma.url}, file key ${figma.key}). Use the Figma MCP tools on that file from now on.`;
     this.system(`Attached ${figma.name}`);
+    if (this.state.session.flow.phase === 'file') void this.toDesign();
   }
 
   onMessage(fn: (m: ServerMessage) => void) {
@@ -311,6 +312,7 @@ export class AgentSession {
   }
 
   async interrupt() {
+    if (this.state.session.flow.phase === 'file') return this.endFlow('stopped', 'Design run stopped');
     if (this.work && this.turns === 0) {
       this.work.abort();
       this.endFlow('stopped', 'Design run stopped');
@@ -349,7 +351,7 @@ export class AgentSession {
     const cmd = parseCommand(text);
     if (cmd && !this.state.session.running) return this.command(cmd.cmd, cmd.arg, text);
     const { mode, phase } = this.state.session.flow;
-    if (mode !== 'chat' && !this.state.session.running && !text.trim().startsWith('/') && phase !== 'pick') {
+    if (mode !== 'chat' && !this.state.session.running && !text.trim().startsWith('/') && phase !== 'pick' && phase !== 'file') {
       if (mode === 'design') return this.startFlow(withRefs(text, images.refs), 'design');
       return this.command('review', text.trim(), text.trim());
     }
@@ -358,7 +360,7 @@ export class AgentSession {
 
   private flowActive() {
     const p = this.state.session.flow.phase;
-    return p !== null && (FLOW_ACTIVE.includes(p) || p === 'pick');
+    return p !== null && (FLOW_ACTIVE.includes(p) || p === 'pick' || p === 'file');
   }
 
   private onArea = (area: ReviewerState['area'], state: ReviewerState['state']) => {
@@ -563,7 +565,12 @@ export class AgentSession {
   }
 
   private async toDesign() {
-    if (!this.figma) return this.endFlow('stopped', 'Design run stopped: link a Figma file to this chat to design');
+    if (!this.figma) {
+      this.setFlow({ phase: 'file' });
+      this.setSession({ running: false });
+      this.system('Attach a Figma file to continue the design run');
+      return;
+    }
     if (!(await readProfile(this.cwd))) {
       this.setFlow({ phase: 'system' });
       this.pushEvent({ id: randomUUID(), kind: 'user', text: 'Design system · Sonnet', at: Date.now(), phase: 'system' });
@@ -631,7 +638,7 @@ export class AgentSession {
 
   private recordResult(msg: Extract<SDKMessage, { type: 'result' }>) {
     const p = this.state.session.flow.phase;
-    const phase = this.flowActive() && p ? (p === 'fix' ? 'design' : p === 'pick' ? 'sketch' : p) : 'chat';
+    const phase = this.flowActive() && p ? (p === 'fix' ? 'design' : p === 'pick' ? 'sketch' : p === 'file' ? 'design' : p) : 'chat';
     const cumulative = msg.total_cost_usd >= this.lastCost;
     const prev = cumulative ? this.lastModels : {};
     const next: Record<string, SpendPart> = {};
@@ -698,7 +705,7 @@ export class AgentSession {
   private turnEnded() {
     this.turns = Math.max(0, this.turns - 1);
     const idle = this.turns === 0 && !this.state.session.stopping;
-    const flowing = idle && this.flowActive() && this.state.session.flow.phase !== 'pick';
+    const flowing = idle && this.flowActive() && this.state.session.flow.phase !== 'pick' && this.state.session.flow.phase !== 'file';
     const next = idle && !flowing ? this.followUp() : null;
     this.setSession({ running: this.turns > 0 || next !== null || flowing, compacting: false, stopping: false });
     if (flowing) void this.advanceFlow();

@@ -85,6 +85,31 @@ describe('AgentSession setFigma', () => {
   });
 });
 
+describe('AgentSession design run without a file', () => {
+  const file = { key: 'AbC123', name: 'Checkout', url: 'https://www.figma.com/design/AbC123' };
+  const toDesign = (s: AgentSession) => (s as unknown as { toDesign: () => Promise<void> }).toDesign();
+
+  it('waits in the file phase and resumes when a file is attached', async () => {
+    const { s } = fakeSession();
+    const next = vi.spyOn(s as unknown as { toDesign: () => Promise<void> }, 'toDesign');
+    await toDesign(s);
+    expect(s.state.session.flow.phase).toBe('file');
+    expect(s.state.session.running).toBe(false);
+    expect(s.state.events.at(-1)).toMatchObject({ kind: 'system', text: 'Attach a Figma file to continue the design run' });
+    next.mockResolvedValue();
+    s.setFigma(file);
+    expect(next).toHaveBeenCalledTimes(2);
+  });
+
+  it('ends as stopped on interrupt', async () => {
+    const { s } = fakeSession();
+    Object.assign(s, { setModel: async () => {}, setPermissionMode: async () => {} });
+    await toDesign(s);
+    await s.interrupt();
+    expect(s.state.session.flow.phase).toBe('stopped');
+  });
+});
+
 describe('AgentSession turns', () => {
   it('stops running when the only turn ends', () => {
     const { s, result } = fakeSession();

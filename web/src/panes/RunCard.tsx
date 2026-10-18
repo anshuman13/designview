@@ -6,7 +6,7 @@ import { AREA_NAMES, FLOW_ACTIVE, PRESET_INFO, type FlowPhase, type FlowState, t
 const STEPS: Array<{ label: string; phases: FlowPhase[] }> = [
   { label: 'Plan', phases: ['plan'] },
   { label: 'Sketch', phases: ['sketch', 'pick'] },
-  { label: 'Design', phases: ['system', 'design'] },
+  { label: 'Design', phases: ['file', 'system', 'design'] },
   { label: 'Review', phases: ['review', 'fix'] },
 ];
 
@@ -17,16 +17,17 @@ const areaLabel = (a: ReviewerState['area']) => (a === 'check' ? 'Design system 
 
 export function runRows(flow: FlowState): { title: string; rows: RunRow[]; tokens: number; waiting: boolean } | null {
   const phase = flow.phase;
-  if (!phase || (!FLOW_ACTIVE.includes(phase) && phase !== 'pick')) return null;
+  if (!phase || (!FLOW_ACTIVE.includes(phase) && phase !== 'pick' && phase !== 'file')) return null;
   const at = STEPS.findIndex((s) => s.phases.includes(phase));
   const detail = phase === 'pick' ? 'Pick directions on the Sketch tab'
+    : phase === 'file' ? 'Waiting for a Figma file'
     : phase === 'fix' ? `Fixing round ${flow.round}`
     : phase === 'review' ? `Review ${flow.round} · ${PRESET_INFO[flow.preset].label}`
     : phase === 'system' ? 'Reading the design system'
     : 'Running';
   const steps = flow.kind === 'sketch' ? STEPS.slice(0, 2) : STEPS;
   const rows = steps.map((s, i): RunRow => (i < at ? { label: s.label, state: 'done' } : i === at ? { label: s.label, state: 'now', detail, ...(s.label === 'Review' && flow.reviewers?.length ? { subs: flow.reviewers.map((r) => ({ label: areaLabel(r.area), state: r.state })) } : {}) } : { label: s.label, state: 'idle' }));
-  return { title: flow.kind === 'sketch' ? 'Sketch run' : 'Design run', rows, tokens: flow.tokens, waiting: phase === 'pick' };
+  return { title: flow.kind === 'sketch' ? 'Sketch run' : 'Design run', rows, tokens: flow.tokens, waiting: phase === 'pick' || phase === 'file' };
 }
 
 export function RunCard() {
@@ -59,7 +60,12 @@ export function RunCard() {
         ))}
       </ol>
       <div className="run-acts">
-        {run.waiting ? (
+        {flow.phase === 'file' ? (
+          <>
+            <button className="primary" onClick={() => window.dispatchEvent(new Event('designview:attach'))}>Attach Figma file</button>
+            <button disabled={stopping} onClick={() => send({ type: 'interrupt' })}>Stop</button>
+          </>
+        ) : run.waiting ? (
           <button className="primary" onClick={() => window.dispatchEvent(new CustomEvent('designview:command', { detail: { id: 'page:sketch' } }))}>Open Sketch</button>
         ) : (
           <button disabled={stopping} onClick={() => send({ type: 'interrupt' })}>Stop</button>
