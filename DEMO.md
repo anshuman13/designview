@@ -205,6 +205,15 @@ the same popover.
 Try: Chats, New chat. Click "Attach Figma file" in the top bar. Paste a Figma link in the composer to see
 the chip (no need to send).
 
+## 24. Run card
+
+The Plan / Sketch / Design / Review stepper at the top of the right panel is gone. While a design or sketch
+run is going, a card at the end of the conversation shows each phase (done, now, still to come), tokens
+used so far, and a Stop button. While Claude waits for you to pick sketch directions, the button is Open
+Sketch instead.
+
+Try: switch the composer to Design and send a brief; the card appears below your message.
+
 ## Open questions for you
 
 - "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a

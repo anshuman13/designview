@@ -3,7 +3,7 @@ import { send, useStore } from '../store';
 import { Icon } from '../Icon';
 import { Pending } from './Pending';
 import { Composer, Markdown } from './Chat';
-import { FlowBar } from './FlowBar';
+import { RunCard } from './RunCard';
 import { ReadAloud } from './Voice';
 import { touch } from '../touch';
 import { useThumbs } from '../useThumbs';
@@ -85,6 +85,7 @@ export function Brief() {
   const context = useStore((s) => s.session.context);
   const compacting = useStore((s) => s.session.compacting);
   const stopping = useStore((s) => s.session.stopping);
+  const phase = useStore((s) => s.session.flow.phase);
   const { moments, next, lastTool, advisor, fable } = useMemo(() => buildTimeline(events), [events]);
   const [all, setAll] = useState(false);
   const [full, setFull] = useState(() => localStorage.getItem('designview.transcript') === '1');
@@ -114,11 +115,10 @@ export function Brief() {
 
   useEffect(() => {
     end.current?.scrollIntoView({ block: 'nearest' });
-  }, [moments.length, next.length, running, waiting]);
+  }, [moments.length, next.length, running, waiting, phase]);
 
   return (
     <div className="brief">
-      <FlowBar />
       <div className="brief-status">
         <div className="timeline-head">
           <span className="tl-tabs">
@@ -130,7 +130,7 @@ export function Brief() {
           <ReadAloud />
           {!full && from > 0 && <button className="link" onClick={() => setAll(true)}>Show all</button>}
         </div>
-        {full ? <Transcript /> : (
+        {full ? <><Transcript /><RunCard /></> : (
           <ol className="timeline">
             {moments.length === 0 && (
               <li className="tl-welcome">
@@ -144,6 +144,7 @@ export function Brief() {
             {shown.map((m, i) => <MomentRow key={m.id} m={m} thumb={m.nodes && withNodes.includes(m) ? thumb : undefined} sub={m.kind !== 'you' && shown.slice(0, i).some((x) => x.kind === 'you')} />)}
           </ol>
         )}
+        {!full && <RunCard />}
         <div className="tl-foot">
           <div className={`tl-now ${state}`}>
             <span className="mark"><Icon name={state === 'waiting' ? 'bell-dot' : state === 'idle' ? 'circle-large-outline' : 'loading'} small spin={state === 'running' || state === 'stopping'} /></span>

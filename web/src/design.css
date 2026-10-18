@@ -78,17 +78,17 @@
 .pick-list button:hover { background: var(--bg-hover); }
 
 /* Phase stepper */
-.flowbar { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); background: var(--bg); margin-bottom: 10px; }
-.flowbar.active { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); box-shadow: 0 0 0 3px var(--accent-soft); }
-.steps-row { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 6px; }
-.steps-row li { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--fg-faint); font-weight: 600; white-space: nowrap; }
-.steps-row .n { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: 1.5px solid currentColor; font-size: var(--text-xs); flex: none; }
-.steps-row li.now { color: var(--accent); }
-.steps-row li.now .n { background: var(--accent); color: #fff; border-color: var(--accent); }
-.steps-row li.done { color: var(--ok); }
-.steps-row .model { font-size: 11px; font-weight: 600; padding: 0 6px; border-radius: 999px; background: var(--bg-sunken); color: var(--fg-muted); }
-.flow-meta { font-size: var(--text-sm); color: var(--fg-muted); }
-.flow-meta .waiting { color: var(--warn); font-weight: 600; }
+.run-card { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; margin: 10px 0; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); }
+.run-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: var(--text-sm); }
+.run-tokens { color: var(--fg-muted); }
+.run-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.run-rows li { display: flex; align-items: center; gap: 8px; font-size: var(--text-sm); color: var(--fg-faint); }
+.run-rows .mark { width: 16px; display: inline-flex; justify-content: center; flex: none; }
+.run-rows .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.run-rows li.done { color: var(--ok); }
+.run-rows li.now { color: var(--accent); font-weight: 600; }
+.run-rows .detail { color: var(--fg-muted); font-weight: 400; }
+.run-acts { display: flex; justify-content: flex-end; }
 .run-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 .run-toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
 
