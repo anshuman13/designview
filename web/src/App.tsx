@@ -23,12 +23,13 @@ import { ConnectPopover } from './ConnectPopover';
 import { McpItem } from './panes/McpStatus';
 import { SpendPill } from './SpendPill';
 import { Shortcuts } from './Shortcuts';
+import { useCanvasContent } from './canvasContent';
 import { canNotify, toggleNotify, useNotify } from './notify';
 import './page.css';
 import './design.css';
 
 type View = 'files' | 'chats' | 'comments' | 'system' | 'rules' | 'explorer';
-type Center = 'figma' | 'sketch' | 'review' | 'preview' | 'code' | 'settings';
+type Center = 'figma' | 'sketch' | 'review' | 'preview' | 'code';
 type Tab = 'chat' | 'figma' | 'sketch' | 'review' | 'more';
 
 const VIEWS: { id: View; icon: string; title: string; dev?: boolean }[] = [
@@ -44,7 +45,7 @@ const CENTER: { id: Center; icon: string; label: string; dev?: boolean }[] = [
   { id: 'figma', icon: 'browser', label: 'Figma' },
   { id: 'sketch', icon: 'edit', label: 'Sketch' },
   { id: 'review', icon: 'checklist', label: 'Review' },
-  { id: 'preview', icon: 'play', label: 'Preview' },
+  { id: 'preview', icon: 'play', label: 'Preview', dev: true },
   { id: 'code', icon: 'code', label: 'Files', dev: true },
 ];
 
@@ -85,6 +86,25 @@ function Preview() {
   return <iframe className="preview-frame" title="Prototype" src={src} />;
 }
 
+function SettingsOverlay({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div className="overlay settings-overlay" onClick={onClose}>
+      <div className="settings-dialog" role="dialog" aria-label="Settings" onClick={(e) => e.stopPropagation()}>
+        <div className="settings-dialog-head">
+          <span>Settings</span>
+          <button className="icon-btn" title="Close" onClick={onClose}><Icon name="close" /></button>
+        </div>
+        <div className="settings-dialog-body"><Settings /></div>
+      </div>
+    </div>
+  );
+}
+
 export function App() {
   const connected = useStore((s) => s.ui.connected);
   const pendingCount = useStore((s) => s.pending.length);
@@ -98,6 +118,9 @@ export function App() {
   const [sidebar, setSidebar] = useState(true);
   const [view, setView] = useState<View>('files');
   const [phone, setPhone] = useState(false);
+  const [settings, setSettings] = useState(false);
+  const [opened, setOpened] = useState(false);
+  const content = useCanvasContent();
   const [dev, setDev] = useState(false);
   const [chatW, setChatW] = useState(() => stored('designview.chatW', 460));
   const [termH, setTermH] = useState(() => stored('designview.termH', 240));
@@ -139,6 +162,7 @@ export function App() {
   };
   const open = (c: Center) => {
     setCenter(c);
+    setOpened(true);
     if (narrow()) setTab(c === 'figma' || c === 'sketch' || c === 'review' ? c : 'more');
   };
 
@@ -148,12 +172,13 @@ export function App() {
 
   const empty = !session.figma || session.id === '' || events.length === 0;
   useEffect(() => {
+    setOpened(false);
     if (empty) setCenter('figma');
   }, [session.id]);
 
   useEffect(() => {
     const next = phase ? PHASE_TAB[phase] : undefined;
-    if (next && !narrow()) setCenter(next);
+    if (next && !narrow()) { setCenter(next); setOpened(true); }
   }, [phase]);
 
   useEffect(() => {
@@ -187,7 +212,7 @@ export function App() {
     const onCommand = (e: Event) => {
       const [kind, arg] = (e as CustomEvent<{ id: string }>).detail.id.split(':');
       if (kind === 'view') { setView(arg as View); setSidebar(true); if (narrow()) setTab('more'); }
-      else if (kind === 'page') open(arg as Center);
+      else if (kind === 'page') { if (arg === 'settings') setSettings(true); else open(arg as Center); }
       else if (kind === 'focus') { if (!narrow()) toggleFocus(); }
       else if (kind === 'phone') setPhone((v) => !v);
       else if (kind === 'tab') setTab(arg as Tab);
@@ -198,12 +223,14 @@ export function App() {
 
   const figma = session.figma;
   const title = figma?.name ?? 'No Figma file';
-  const centers = CENTER.filter((c) => !c.dev || dev);
+  const centers = CENTER.filter((c) => (c.dev ? dev : content[c.id as keyof typeof content] || (opened && center === c.id)));
+  const collapsed = centers.length === 0;
   const views = VIEWS.filter((v) => !v.dev || dev);
-  const shownCenter = narrow() && (tab === 'figma' || tab === 'sketch' || tab === 'review') ? tab : center;
+  const wanted = narrow() && (tab === 'figma' || tab === 'sketch' || tab === 'review') ? tab : center;
+  const shownCenter = centers.some((c) => c.id === wanted) ? wanted : centers[0]?.id;
 
   return (
-    <div className="workbench" data-tab={tab} data-sidebar={sidebar} data-focus={focusMode} style={{ '--chat-w': `${chatW}px` } as React.CSSProperties}>
+    <div className="workbench" data-tab={tab} data-sidebar={sidebar} data-focus={focusMode} data-collapsed={collapsed} style={{ '--chat-w': `${chatW}px` } as React.CSSProperties}>
       <Offline />
       <header className="topbar">
         <span className="brand"><span className="logo" />DesignView</span>
@@ -216,7 +243,7 @@ export function App() {
         <McpItem />
         {canNotify && <button className="icon-btn" title={notifying ? 'Notifications on' : 'Notify me when Claude finishes or needs me'} onClick={toggleNotify}><Icon name={notifying ? 'bell' : 'bell-slash'} /></button>}
         <button className="icon-btn" title="Open on phone" onClick={() => setPhone((v) => !v)}><Icon name="device-mobile" /></button>
-        <button className={`icon-btn ${center === 'settings' ? 'active' : ''}`} title="Settings" onClick={() => open('settings')}><Icon name="settings-gear" /></button>
+        <button className={`icon-btn ${settings ? 'active' : ''}`} title="Settings" onClick={() => setSettings(true)}><Icon name="settings-gear" /></button>
         {!connected && <span className="error-text">Disconnected</span>}
       </header>
       <div className="body">
@@ -234,7 +261,7 @@ export function App() {
           {tab === 'more' && (
             <div className="side-switch mobile-only">
               {views.map((v) => <button key={v.id} className={view === v.id ? 'active' : ''} onClick={() => setView(v.id)}>{v.title}</button>)}
-              <button onClick={() => open('settings')}>Settings</button>
+              <button onClick={() => setSettings(true)}>Settings</button>
             </div>
           )}
           {view === 'files' ? <Files /> : view === 'chats' ? <Chats /> : view === 'comments' ? <Comments /> : view === 'system' ? <DesignSystem /> : view === 'rules' ? <Rules /> : <Explorer />}
@@ -248,7 +275,6 @@ export function App() {
                 {c.id === 'sketch' && phase === 'pick' && <span className="badge waiting">!</span>}
               </button>
             ))}
-            {center === 'settings' && <button className="tab active"><Icon name="settings-gear" small /> Settings</button>}
             <span className="spacer" />
             <button className="icon-btn focus-btn desktop-only" title={focusMode ? 'Exit focus mode (⌘.)' : 'Focus mode (⌘.)'} onClick={toggleFocus}><Icon name={focusMode ? 'screen-normal' : 'screen-full'} small /></button>
           </div>
@@ -256,7 +282,6 @@ export function App() {
           <div className={`editor ${shownCenter === 'sketch' ? 'shown' : ''}`}>{shownCenter === 'sketch' && <Sketch />}</div>
           <div className={`editor ${shownCenter === 'review' ? 'shown' : ''}`}>{shownCenter === 'review' && <Review />}</div>
           <div className={`editor ${shownCenter === 'preview' ? 'shown' : ''}`}>{shownCenter === 'preview' && <Preview />}</div>
-          <div className={`editor ${shownCenter === 'settings' ? 'shown' : ''}`}>{shownCenter === 'settings' && <Settings />}</div>
           {dev && <div className={`editor ${shownCenter === 'code' ? 'shown' : ''}`}><CodePane /></div>}
           {focusMode && (
             <div className="focus-pill desktop-only">
@@ -283,8 +308,8 @@ export function App() {
       </div>
 
       <nav className="tabbar mobile-only">
-        {([['chat', 'comment-discussion', 'Timeline'], ['figma', 'browser', 'Figma'], ['sketch', 'edit', 'Sketch'], ['review', 'checklist', 'Review'], ['more', 'ellipsis', 'More']] as const).map(([id, icon, label]) => (
-          <button key={id} className={tab === id ? 'active' : ''} onClick={() => { setTab(id); if (id !== 'chat' && id !== 'more') setCenter(id); }}>
+        {([['chat', 'comment-discussion', 'Timeline'], ['figma', 'browser', 'Figma'], ['sketch', 'edit', 'Sketch'], ['review', 'checklist', 'Review'], ['more', 'ellipsis', 'More']] as const).filter(([id]) => id === 'chat' || id === 'more' || content[id] || tab === id).map(([id, icon, label]) => (
+          <button key={id} className={tab === id ? 'active' : ''} onClick={() => { setTab(id); if (id !== 'chat' && id !== 'more') { setCenter(id); setOpened(true); } }}>
             <Icon name={icon} />
             <span>{label}</span>
             {id === 'chat' && pendingCount > 0 && <span className="badge">{pendingCount}</span>}
@@ -296,6 +321,7 @@ export function App() {
       <Palette />
       <RecipeEditorHost />
       <Shortcuts />
+      {settings && <SettingsOverlay onClose={() => setSettings(false)} />}
       {phone && <ConnectPopover onClose={() => setPhone(false)} />}
     </div>
   );

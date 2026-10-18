@@ -232,6 +232,15 @@ palette (run or "Recipe: Edit ..."). Chats without a file are grouped under "No 
 
 Try: Chats, click Sample tour. Press ⌘K and type "recipe".
 
+## 27. Tabs only when there is something to show
+
+The Figma, Sketch and Review tabs appear only when the chat has a file, sketches or a review. With
+nothing to show, the canvas column is hidden and the conversation fills the window at a readable width.
+Opening a page from the palette or ⌘1..5 brings its tab back. Preview and Files are dev-tools only.
+Settings (gear) opens as an overlay; Escape closes it.
+
+Try: New chat shows only the conversation. Open the Sample tour to see Figma, Sketch and Review tabs.
+
 ## Open questions for you
 
 - "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a
