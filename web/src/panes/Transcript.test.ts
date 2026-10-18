@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildTranscript, duration, groupTurns, stepLabel } from './steps';
+import { welcomeChips } from './Transcript';
 import { editCount, replyLine, sumEdits } from '../../../shared/edits';
 import type { ChatEvent, LiveChat } from '../../../shared/protocol';
 
@@ -146,5 +147,20 @@ describe('sumEdits and replyLine', () => {
     expect(replyLine([say('**Bold** start')])).toBe('Bold start');
     expect(replyLine([say('a'.repeat(80))])).toHaveLength(60);
     expect(replyLine([user('x')])).toBeUndefined();
+  });
+});
+
+describe('welcomeChips', () => {
+  it('names the attached file and offers no attach chip', () => {
+    const chips = welcomeChips('Checkout');
+    expect(chips).toHaveLength(4);
+    expect(chips.some((c) => c.attach)).toBe(false);
+    expect(chips.filter((c) => c.label.includes('Checkout'))).toHaveLength(2);
+  });
+
+  it('leads with an attach chip when no file is attached', () => {
+    const chips = welcomeChips(null);
+    expect(chips).toHaveLength(4);
+    expect(chips[0].attach).toBe(true);
   });
 });

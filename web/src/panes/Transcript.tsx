@@ -22,7 +22,10 @@ export function Transcript({ children }: { children?: ReactNode }) {
   return <TranscriptView events={events} cwd={cwd} running={running} stopping={stopping} status={status} figmaKey={figmaKey}>{children}</TranscriptView>;
 }
 
-const SUGGESTIONS = ['Review the selected frames for spacing and contrast', 'Write empty, loading and error states for this screen', 'Suggest three layout options for a pricing page', 'Turn these notes into a design brief'];
+export function welcomeChips(fileName: string | null): Array<{ label: string; attach?: boolean }> {
+  if (fileName) return [`Review the frames in ${fileName} for spacing and contrast`, 'Add missing empty, loading and error states to the selected frame', 'Suggest three layout options for the selected frame', `Write a design brief for the next screen in ${fileName}`].map((label) => ({ label }));
+  return [{ label: 'Attach a Figma file', attach: true }, { label: 'Suggest three layout options for a pricing page' }, { label: 'Write empty, loading and error states for a sign-up screen' }, { label: 'Turn these notes into a design brief' }];
+}
 
 function SetupBanner() {
   const [missing, setMissing] = useState(false);
@@ -46,6 +49,7 @@ export function TranscriptView({ events, cwd, running, stopping, status, figmaKe
   const last = events[events.length - 1];
   const wanted = new Map<string, number>();
   for (const it of items.filter((x) => x.kind === 'done' && x.nodes.length).slice(-10)) for (const [id, rev] of (it as DoneItem).nodes) wanted.set(id, Math.max(wanted.get(id) ?? 0, rev));
+  const fileName = useStore((s) => s.session.figma?.name ?? null);
   const thumb = useThumbs(figmaKey, [...wanted]);
 
   useEffect(() => {
@@ -66,7 +70,7 @@ export function TranscriptView({ events, cwd, running, stopping, status, figmaKe
           <h2>What are we working on?</h2>
           <p>Chat with Claude about your design. Switch to Design mode (Shift+Tab) for a full plan, sketch, design and review run.</p>
           <div className="tl-chips">
-            {SUGGESTIONS.map((s) => <button key={s} onClick={() => insertPrompt(s)}>{s}</button>)}
+            {welcomeChips(fileName).map((c) => <button key={c.label} onClick={() => (c.attach ? window.dispatchEvent(new Event('designview:attach')) : insertPrompt(c.label))}>{c.label}</button>)}
           </div>
         </div>
       )}

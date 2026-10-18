@@ -170,6 +170,9 @@ the turn finds the top-level frame that holds it with one Figma REST call and ch
 edit made it check the whole file. Try it with real-run step 2: ask for a text change inside one frame, and the review
 card lists only that frame.
 
+**Welcome suggestions.** An empty chat's suggestion chips follow the file state. With no file, the first chip is
+"Attach a Figma file" and opens the attach popover. With a file attached, the chips name the file and the selected frame.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.
