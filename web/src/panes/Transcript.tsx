@@ -7,6 +7,7 @@ import { FileIcon } from './Explorer';
 import { insertPrompt, showNode } from './Files';
 import { useThumbs } from '../useThumbs';
 import { frameName, splitFrameLinks, useOutline } from '../outline';
+import { FrameNames } from '../FrameNames';
 import { buildTranscript, duration, firstLine, groupTurns, relPath, stepLabel, type Block, type Item, type ToolResult, type ToolUse } from './steps';
 import { focusReview } from './reviewFocus';
 import { areaRows, canGoDeeper, isStale, retryPrompt, runLabel, summarize, unposted } from './reviewRuns';
@@ -262,7 +263,7 @@ function ReviewCard({ runAt }: { runAt: number }) {
         <span className="tr-review-sum">{summarize({ kind: run.kind === 'audit' ? 'audit' : 'review', id: run.id, at: run.at, tokens: run.tokens, run })}</span>
         {run.tokens > 0 && <span className="tr-dur">{Math.round(run.tokens / 1000)}k tokens</span>}
       </div>
-      {run.frames.length > 0 && <div className="tr-review-frames">{run.frames.slice(0, 3).map((id) => frameName(outline, id) ?? id).join(', ')}{run.frames.length > 3 && ` +${run.frames.length - 3} more`}</div>}
+      {run.frames.length > 0 && <div className="tr-review-frames"><FrameNames ids={run.frames} /></div>}
       <ul className="tr-review-rows">
         {areaRows(run).map((a) => (
           <li

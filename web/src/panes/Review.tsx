@@ -6,6 +6,7 @@ import { showNode, insertPrompt } from './Files';
 import { Empty, ReviewArt } from './Empty';
 import { CopyDetail, CritDetail } from './Crit';
 import { BuildCheck } from './BuildCheck';
+import { FrameNames } from '../FrameNames';
 import { takeReviewFocus, type ReviewFocus } from './reviewFocus';
 import { KIND_LABEL, ago, mergeRuns, runLabel, shownPreset, summarize, unposted, type RunRow } from './reviewRuns';
 
@@ -122,7 +123,7 @@ function ReviewDetail({ run, doc, onDoc, focus }: { run: ReviewRun; doc: ReviewD
   return (
     <>
       <div className="review-summary">
-        <div><b>{runLabel(run)}</b> · {when(run.at)} · {run.frames.length} frames</div>
+        <div><b>{runLabel(run)}</b> · {when(run.at)} · <FrameNames ids={run.frames} /></div>
         <div className="muted">{run.tokens ? `${k(run.tokens)} tokens · $${run.costUsd.toFixed(2)}` : 'No tokens used'}</div>
         {pending.length > 0 && <button disabled={posting} onClick={post}><Icon name="comment" small /> Post {pending.length} as Figma comments</button>}
         {hasFindings && <button onClick={copy}><Icon name="copy" small /> {copied ? 'Copied' : 'Copy as checklist'}</button>}

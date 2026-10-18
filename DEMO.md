@@ -213,6 +213,7 @@ typed text there. Untested with a real second file so far.
 **Frame names in the chat.** Figma frame links in your messages show as a chip with the frame's name; click it to
 open the frame. Review cards list the reviewed frames by name under the title (three, then "+n more"). Names come from
 one outline request shared by the whole page and refreshed at most once a minute; without it, ids show instead.
+The frame names on review cards and in the Review pane run summary are links that open the frame.
 
 **Retry a failed review.** When a reviewer failed (timeout, tool error), its row says "failed" and the review card gets
 "Retry", which puts `/review <same preset> <same frames>` in the composer for you to send.
