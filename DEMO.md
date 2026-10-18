@@ -187,6 +187,9 @@ The same button is in the Review pane, next to "Post as Figma comments" on the s
 changed since this review" with "Check again", which puts `/review check <frame ids>` in the composer (free, no model
 tokens). The app reads the file's last-modified time at most once a minute. Not shown in the sample tour.
 
+**Chat search.** The Chats panel has a "Search chats" box under New chat. It matches file names (the whole group
+stays) and chat titles, and lists every matching recent chat instead of the last five. Escape clears it.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.

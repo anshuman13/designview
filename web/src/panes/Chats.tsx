@@ -33,6 +33,15 @@ export function groupChats(live: LiveChat[], saved: SavedSession[], folders: Fol
   return [...groups.values()].sort((a, b) => last(b) - last(a));
 }
 
+export function filterGroups(groups: Group[], query: string): Group[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return groups;
+  const hit = (t: string) => t.toLowerCase().includes(q);
+  return groups
+    .map((g) => (hit(g.name) ? g : { ...g, open: g.open.filter((c) => hit(c.title)), recent: g.recent.filter((r) => hit(r.title)) }))
+    .filter((g) => g.open.length || g.recent.length);
+}
+
 export function Chats() {
   const viewing = useStore((s) => s.session.id);
   const current = useStore((s) => s.session.sessionId);
@@ -43,6 +52,7 @@ export function Chats() {
   const [opening, setOpening] = useState<string | null>(null);
   const [sampleBusy, setSampleBusy] = useState(false);
   const [sampleError, setSampleError] = useState('');
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     getJson<Folder[]>('/api/figma/folders').then(setFolders).catch(() => {});
@@ -50,7 +60,8 @@ export function Chats() {
     setOpening(null);
   }, [current, live.length]);
 
-  const groups = useMemo(() => groupChats(live, saved, folders), [live, saved, folders]);
+  const all = useMemo(() => groupChats(live, saved, folders), [live, saved, folders]);
+  const groups = useMemo(() => filterGroups(all, query), [all, query]);
   const close = (c: LiveChat) =>
     c.running || c.pending
       ? setAsk({ title: 'Close this chat?', detail: c.title, warning: 'Claude is still working on it and will stop. The transcript is kept.', action: 'Close', run: async () => send({ type: 'close', id: c.id }) })
@@ -74,6 +85,9 @@ export function Chats() {
       <div className="sessions-bar">
         <button className="new-chat primary" onClick={() => send({ type: 'new_chat' })}><Icon name="add" small /> New chat</button>
       </div>
+      <div className="sessions-bar">
+        <input type="search" placeholder="Search chats" aria-label="Search chats" value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setQuery(''); } }} />
+      </div>
       <div className="tree">
         <div className={`row session sample ${sampleBusy ? 'busy' : ''}`} title="Open the sample chat" onClick={() => sampleBusy || void openSample()}>
           <span className="twistie"><Icon name="play" small /></span>
@@ -90,7 +104,7 @@ export function Chats() {
               </span>
             </div>
             {g.open.map((c) => <LiveRow key={c.id} c={c} selected={c.id === viewing} onClose={() => close(c)} />)}
-            {g.recent.slice(0, RECENT).map((s) => (
+            {(query ? g.recent : g.recent.slice(0, RECENT)).map((s) => (
               <div key={s.sessionId} className="row session recent" title={s.title} onClick={() => { setOpening(s.sessionId); send({ type: 'open_session', sessionId: s.sessionId }); }}>
                 <span className="name">{opening === s.sessionId ? 'Opening… ' : ''}{s.title}</span>
                 <span className="when">{ago(s.lastModified)}</span>
@@ -98,7 +112,7 @@ export function Chats() {
             ))}
           </div>
         ))}
-        {!groups.length && <div className="hint">No chats yet.</div>}
+        {!groups.length && <div className="hint">{query ? 'No chats match.' : 'No chats yet.'}</div>}
       </div>
       {ask && <Confirm {...ask} onClose={() => setAsk(null)} />}
     </div>
