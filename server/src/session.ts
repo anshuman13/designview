@@ -194,19 +194,19 @@ export class AgentSession {
     if (!this.q) return;
     try {
       const [models, commands] = await Promise.all([this.q.supportedModels(), this.q.supportedCommands()]);
+      const own = [
+        { name: 'design', description: 'Plan, sketch, design in Figma and review' },
+        { name: 'sketch', description: 'Plan and sketch directions only' },
+        { name: 'review', description: 'Review frames: /review [check|quick|focused|full] [frame links]' },
+        { name: 'audit', description: 'Design system check across the whole file, no model calls' },
+        { name: 'crit', description: 'Design crit from four viewpoints: /crit [frame links]' },
+        { name: 'buildcheck', description: 'Compare a live page with a frame: /buildcheck <url> [frame link]' },
+        { name: 'copy', description: 'Copy pass: /copy [frame links] [tone:friendly|neutral|formal]' },
+        { name: 'system', description: 'Rebuild the design system profile' },
+      ];
       this.setSession({
         models: models.map((m) => ({ value: m.value, displayName: m.displayName, description: m.description })),
-        commands: [
-          { name: 'design', description: 'Plan, sketch, design in Figma and review' },
-          { name: 'sketch', description: 'Plan and sketch directions only' },
-          { name: 'review', description: 'Review frames: /review [check|quick|focused|full] [frame links]' },
-          { name: 'audit', description: 'Design system check across the whole file, no model calls' },
-          { name: 'crit', description: 'Design crit from four viewpoints: /crit [frame links]' },
-          { name: 'buildcheck', description: 'Compare a live page with a frame: /buildcheck <url> [frame link]' },
-          { name: 'copy', description: 'Copy pass: /copy [frame links] [tone:friendly|neutral|formal]' },
-          { name: 'system', description: 'Rebuild the design system profile' },
-          ...commands.filter((c) => c.name !== 'review').map((c) => ({ name: c.name, description: c.description })),
-        ],
+        commands: [...own, ...commands.filter((c) => !own.some((o) => o.name === c.name)).map((c) => ({ name: c.name, description: c.description }))],
       });
     } catch (err) {
       process.stderr.write(`loadMeta failed: ${String(err)}\n`);
