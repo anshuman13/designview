@@ -147,6 +147,10 @@ at 1 MB and rules at 20 KB. The sample chat is read-only on every path.
 **Chats without a file.** All chats with no Figma file attached sit in one "No file yet" group in Chats. Its + button
 starts another new chat.
 
+**Phone layout.** At phone width the top bar keeps the file name, spend pill, MCP dot, notifications and Settings; the
+idle status and the phone QR button are hidden. The bottom bar reads Chat, Figma, Sketch, Review, More (Figma, Sketch
+and Review only when they have content), and the duplicate tab strip above the canvas is hidden.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.

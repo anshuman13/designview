@@ -252,7 +252,7 @@ export function App() {
         <SpendPill />
         <McpItem />
         {canNotify && <button className="icon-btn" title={notifying ? 'Notifications on' : 'Notify me when Claude finishes or needs me'} onClick={toggleNotify}><Icon name={notifying ? 'bell' : 'bell-slash'} /></button>}
-        <button className="icon-btn" title="Open on phone" onClick={() => setPhone((v) => !v)}><Icon name="device-mobile" /></button>
+        <button className="icon-btn phone-btn" title="Open on phone" onClick={() => setPhone((v) => !v)}><Icon name="device-mobile" /></button>
         <button className={`icon-btn ${settings ? 'active' : ''}`} title="Settings" onClick={() => setSettings(true)}><Icon name="settings-gear" /></button>
         {!connected && <span className="error-text">Disconnected</span>}
       </header>
@@ -318,7 +318,7 @@ export function App() {
       </div>
 
       <nav className="tabbar mobile-only">
-        {([['chat', 'comment-discussion', 'Timeline'], ['figma', 'browser', 'Figma'], ['sketch', 'edit', 'Sketch'], ['review', 'checklist', 'Review'], ['more', 'ellipsis', 'More']] as const).filter(([id]) => id === 'chat' || id === 'more' || content[id] || tab === id).map(([id, icon, label]) => (
+        {([['chat', 'comment-discussion', 'Chat'], ['figma', 'browser', 'Figma'], ['sketch', 'edit', 'Sketch'], ['review', 'checklist', 'Review'], ['more', 'ellipsis', 'More']] as const).filter(([id]) => id === 'chat' || id === 'more' || content[id] || tab === id).map(([id, icon, label]) => (
           <button key={id} className={tab === id ? 'active' : ''} onClick={() => { setTab(id); if (id !== 'chat' && id !== 'more') { setCenter(id); setOpened(true); } }}>
             <Icon name={icon} />
             <span>{label}</span>

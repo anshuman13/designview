@@ -92,6 +92,9 @@
 @media (max-width: 900px) {
   .topbar .spend-pill, .topbar .item, .topbar .run-state { white-space: nowrap; }
   .topbar .item .label, .topbar .run-state .label { display: none; }
+  .topbar .run-state:not(.busy), .topbar .phone-btn { display: none; }
+  .topbar .file-wrap { flex: 1 1 auto; }
+  .workbench:is([data-tab='figma'], [data-tab='sketch'], [data-tab='review']) .editor-group > .tabs { display: none; }
   .side-switch { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .side-switch > button { flex: none; white-space: nowrap; }
 }

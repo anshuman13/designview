@@ -1,4 +1,4 @@
-.file-wrap { position: relative; min-width: 0; }
+.file-wrap { position: relative; min-width: 0; flex: 0 1 auto; display: flex; }
 .attach-pop { position: absolute; top: calc(100% + 6px); left: 0; width: min(360px, calc(100vw - 16px)); max-height: 70vh; z-index: 12; }
 .attach-form { display: flex; gap: 6px; padding: 6px; }
 .attach-form input { flex: 1; min-width: 0; margin: 0; }
