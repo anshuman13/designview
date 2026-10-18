@@ -7,7 +7,7 @@ import { FileIcon } from './Explorer';
 import { insertPrompt, showNode } from './Files';
 import { useThumbs } from '../useThumbs';
 import { buildTranscript, duration, firstLine, groupTurns, relPath, stepLabel, type Block, type Item, type ToolResult, type ToolUse } from './steps';
-import { areaRows, canGoDeeper, runLabel, summarize, unposted } from './reviewRuns';
+import { areaRows, canGoDeeper, isStale, runLabel, summarize, unposted } from './reviewRuns';
 import { reviewChecklist, type ReviewDoc } from '../../../shared/design';
 import type { ChatEvent } from '../../../shared/protocol';
 import '../transcript.css';
@@ -214,6 +214,25 @@ function AgentRow({ use, result }: { use: ToolUse; result?: ToolResult }) {
   );
 }
 
+const lastModifiedCache = new Map<string, { value: string; at: number }>();
+
+function useLastModified(key: string | undefined) {
+  const rev = useRev('review.json');
+  const [value, setValue] = useState<string | null>(null);
+  useEffect(() => {
+    if (!key || key === 'sample') return setValue(null);
+    const hit = lastModifiedCache.get(key);
+    if (hit && Date.now() - hit.at < 60_000) return setValue(hit.value);
+    let live = true;
+    getJson<{ lastModified: string }>('/api/figma/outline').then((o) => {
+      lastModifiedCache.set(key, { value: o.lastModified, at: Date.now() });
+      if (live) setValue(o.lastModified);
+    }).catch(() => {});
+    return () => { live = false; };
+  }, [key, rev]);
+  return key && key !== 'sample' ? value : null;
+}
+
 function ReviewCard({ runAt }: { runAt: number }) {
   const chat = useStore((s) => s.session.id);
   const hasFile = useStore((s) => !!s.session.figma);
@@ -224,6 +243,8 @@ function ReviewCard({ runAt }: { runAt: number }) {
   const [posting, setPosting] = useState(false);
   const [note, setNote] = useState('');
   useEffect(() => { getJson<ReviewDoc>('/api/review').then(setDoc).catch(() => {}); }, [chat, rev]);
+  const latestAt = doc?.runs.length ? Math.max(...doc.runs.map((r) => r.at)) : 0;
+  const lastModified = useLastModified(latestAt === runAt ? figmaKey : undefined);
   const run = doc?.runs.find((r) => r.at === runAt);
   if (!doc || !run) return <div className="tr-system">Review finished</div>;
   const pending = unposted(run, doc);
@@ -261,6 +282,7 @@ function ReviewCard({ runAt }: { runAt: number }) {
           </li>
         ))}
       </ul>
+      {isStale(run, lastModified, latestAt) && <div className="tr-review-stale">File changed since this review <button onClick={() => insertPrompt(`/review check ${run.frames.join(' ')}`)}>Check again</button></div>}
       <div className="tr-review-actions">
         <button onClick={() => window.dispatchEvent(new CustomEvent('designview:command', { detail: { id: 'page:review' } }))}>Open Review</button>
         {hasFindings && <button onClick={copy}>{copied ? 'Copied' : 'Copy as checklist'}</button>}

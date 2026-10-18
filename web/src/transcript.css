@@ -111,4 +111,5 @@
 .tr-review-rows li.fail .codicon { color: var(--err); }
 .tr-review-failed { color: var(--err); }
 .tr-review-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tr-review-stale { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; color: var(--fg-muted); }
 .tr-review-note { color: var(--fg-faint); }

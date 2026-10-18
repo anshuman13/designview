@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ago, areaRows, canGoDeeper, mergeRuns, runLabel, shownPreset, summarize, unposted } from './reviewRuns';
+import { ago, areaRows, canGoDeeper, isStale, mergeRuns, runLabel, shownPreset, summarize, unposted } from './reviewRuns';
 import type { CopyRun, CritRun, Finding, ReviewRun } from '../../../shared/design';
 
 const finding = (severity: Finding['severity']): Finding => ({ id: severity, area: 'color', severity, rule: 'r', fix: 'f', node: '1:2' }) as Finding;
@@ -66,5 +66,21 @@ describe('review card helpers', () => {
   it('skips posted and minor findings', () => {
     const run = review('a', 1, { check: [finding('blocking'), finding('major'), finding('minor')] });
     expect(unposted(run, { runs: [run], posted: ['major'] }).map((f) => f.id)).toEqual(['blocking']);
+  });
+});
+
+describe('isStale', () => {
+  const at = Date.parse('2026-01-01T00:00:00Z');
+  it('is true when the file changed after the latest run', () => {
+    expect(isStale({ at }, '2026-01-02T00:00:00Z', at)).toBe(true);
+  });
+  it('is false when the file changed before the run', () => {
+    expect(isStale({ at }, '2025-12-31T00:00:00Z', at)).toBe(false);
+  });
+  it('is false for a run that is not the latest', () => {
+    expect(isStale({ at }, '2026-01-02T00:00:00Z', at + 1)).toBe(false);
+  });
+  it('is false for missing or invalid lastModified', () => {
+    for (const v of [null, undefined, '', 'nope']) expect(isStale({ at }, v, at)).toBe(false);
   });
 });

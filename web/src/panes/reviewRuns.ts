@@ -49,3 +49,8 @@ export function areaRows(run: ReviewRun): Array<{ name: string; pass: boolean; f
 }
 
 export const canGoDeeper = (run: ReviewRun) => run.preset === 'quick' || run.preset === 'check';
+
+export function isStale(run: Pick<ReviewRun, 'at'>, lastModified: string | null | undefined, latestAt: number): boolean {
+  const t = lastModified ? Date.parse(lastModified) : NaN;
+  return run.at === latestAt && !Number.isNaN(t) && t > run.at;
+}

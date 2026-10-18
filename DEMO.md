@@ -181,6 +181,10 @@ read. The idle hint under the composer says "# for frames" when a file is attach
 blocking issues first, each line with the layer, the rule, the fix and a link to the node in Figma. Paste it into a
 ticket or a Figma comment. Try it on the review card in the sample tour (the sample has no real file, so no links).
 
+**Stale review hint.** When the Figma file was saved after the newest review in a chat, that review card says "File
+changed since this review" with "Check again", which puts `/review check <frame ids>` in the composer (free, no model
+tokens). The app reads the file's last-modified time at most once a minute. Not shown in the sample tour.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.
