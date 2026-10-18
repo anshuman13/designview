@@ -199,6 +199,9 @@ it, and its draft goes with it.
 Review pane on that run with the area's card expanded, outlined and scrolled into view. Try Typography on the sample
 tour's review card.
 
+**Phone check of the newer features.** At 390px wide: review card links jump to the Review pane, chat search sits under
+New chat in More, Chats, and `#` rows cut long frame names short so the page name stays visible.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.
