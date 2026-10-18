@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accept, figmaLinkIn, nextMode, buildHistory, contextPercent, filesEdited, ghostFor, rankCommands, rankFiles, rankFrames, recipeSlug, remember, triggerAt, withRecipes } from './Composer';
+import { accept, figmaLinkIn, nextMode, buildHistory, contextPercent, filesEdited, ghostFor, rankCommands, rankFiles, rankFrames, recentFirst, recentFrameIds, recipeSlug, remember, triggerAt, withRecipes } from './Composer';
 import { RECIPES, toRecipe } from '../../../shared/recipes';
 import type { ChatEvent } from '../../../shared/protocol';
 
@@ -199,5 +199,17 @@ describe('withRecipes', () => {
 describe('recipeSlug', () => {
   it('hyphenates and trims', () => {
     expect(recipeSlug('  My  Recipe: v2 ')).toBe('my-recipe-v2');
+  });
+});
+
+describe('recent frames', () => {
+  const use = (name: string, input: Record<string, unknown>, id: string) => ({ id, kind: 'tool_use', name, input, summary: '', at: 0 }) as ChatEvent;
+  it('collects node ids from Figma tools, newest first', () => {
+    const events = [use('mcp__figma__use_figma', { code: 'node 1:2' }, 'a'), use('Bash', { command: 'echo 9:9' }, 'b'), use('mcp__agentview__set_status', { nodes: ['3:4', '1:2'] }, 'c')];
+    expect(recentFrameIds(events)).toEqual(['3:4', '1:2']);
+  });
+  it('puts recent frames first and keeps the rest in order', () => {
+    const f = (id: string) => ({ id, name: id, page: 'P' });
+    expect(recentFirst([f('1:1'), f('2:2'), f('3:3')], ['3:3', '9:9']).map((x) => x.id)).toEqual(['3:3', '1:1', '2:2']);
   });
 });

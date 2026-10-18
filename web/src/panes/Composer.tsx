@@ -54,6 +54,20 @@ export type FrameRef = { id: string; name: string; page: string };
 
 export const rankFrames = (frames: FrameRef[], query: string, limit = MAX_ROWS) => rank(frames, (f) => f.name, query, limit);
 
+export function recentFrameIds(events: ChatEvent[]): string[] {
+  const ids: string[] = [];
+  for (const e of [...events].reverse()) {
+    if (e.kind !== 'tool_use' || !/figma|set_status/i.test(e.name)) continue;
+    for (const m of JSON.stringify(e.input).matchAll(/(?<![\w:.-])(\d+:\d+)(?![\w:.-])/g)) if (!ids.includes(m[1])) ids.push(m[1]);
+  }
+  return ids;
+}
+
+export function recentFirst(frames: FrameRef[], recent: string[]): FrameRef[] {
+  const pos = (f: FrameRef) => { const i = recent.indexOf(f.id); return i < 0 ? recent.length : i; };
+  return [...frames].sort((a, b) => pos(a) - pos(b));
+}
+
 export type SlashCommand = { name: string; description: string; recipe?: Recipe };
 
 export const recipeSlug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -195,12 +209,14 @@ export function Composer() {
   const shell = trigger?.kind === 'shell';
   const popKey = trigger && trigger.kind !== 'shell' ? `${trigger.kind}:${trigger.start}:${trigger.query}` : '';
   const frames = useMemo(() => (loaded && loaded.key === figmaKey ? loaded.list : []), [loaded, figmaKey]);
+  const frameMode = trigger?.kind === 'frame';
+  const recent = useMemo(() => (frameMode ? recentFrameIds(events) : []), [frameMode, events]);
   const items = useMemo(() => {
     if (!trigger || trigger.kind === 'shell' || popKey === dismissed) return [];
     if (trigger.kind === 'command') return rankCommands(commands, trigger.query, MAX_COMMANDS);
-    if (trigger.kind === 'frame') return rankFrames(frames, trigger.query);
+    if (trigger.kind === 'frame') return rankFrames(trigger.query ? frames : recentFirst(frames, recent), trigger.query);
     return rankFiles(files, trigger.query);
-  }, [trigger, popKey, dismissed, commands, files, frames]);
+  }, [trigger, popKey, dismissed, commands, files, frames, recent]);
   const open = items.length > 0;
   const thumb = useThumbs(trigger?.kind === 'frame' ? figmaKey : undefined, trigger?.kind === 'frame' ? items.map((r) => [(r.item as FrameRef).id, 0]) : []);
   const history = useMemo(() => buildHistory(events, stored), [events, stored]);
