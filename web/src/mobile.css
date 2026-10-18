@@ -12,7 +12,7 @@
   .pane.side, .pane.center { flex-direction: column; min-height: 0; }
   .main { flex-direction: column; }
   .brief { display: contents; --brief-bg: var(--bg); }
-  .brief-status { order: 0; flex: 1 1 0; min-height: 0; overflow: auto; padding: 6px 12px 8px; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .brief-status { order: 0; flex: 1 1 0; min-height: 0; overflow: hidden; padding: 0 12px; background: var(--bg); border-bottom: 1px solid var(--border); }
   .brief-cards { order: 1; flex: none; max-height: 50%; overflow: auto; padding: 8px 12px; }
   .brief-input { order: 2; flex: none; padding: 6px 12px 8px; }
   .step .acts { opacity: 1; }
@@ -20,9 +20,7 @@
   .step .icon-btn { width: 36px; height: 36px; }
   .step input { height: 36px; font-size: var(--text-lg); }
   .step.add .link { min-height: 36px; }
-  .timeline-head { height: 44px; }
-  .timeline-head .icon-btn { width: 36px; height: 36px; }
-  .tl, .tl-now { font-size: var(--text-md); line-height: 20px; }
+  .tl-now { font-size: var(--text-md); line-height: 20px; }
   .folder-switch { height: 44px; }
   .tabs, .tab { height: 44px; }
   .tab.active, .tab.active:hover { margin-bottom: -1px; }
@@ -88,8 +86,6 @@
 }
 
 @media (max-width: 900px) and (max-height: 500px) {
-  .timeline-head { height: 36px; }
-  .brief-status { padding-top: 2px; }
   .brief-input { padding-top: 4px; }
 }
 

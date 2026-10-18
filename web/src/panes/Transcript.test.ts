@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTranscript, duration, stepLabel } from './steps';
+import { buildTranscript, duration, groupTurns, stepLabel } from './steps';
 import { editCount, replyLine, sumEdits } from '../../../shared/edits';
 import type { ChatEvent, LiveChat } from '../../../shared/protocol';
 
@@ -75,6 +75,51 @@ describe('buildTranscript', () => {
     const items = buildTranscript([tool('mcp__designview__set_status', { text: 'x' }), task, say('  '), result(task.id, 'report')]);
     expect(items.map((i) => i.kind)).toEqual(['agent']);
     expect(items[0]).toMatchObject({ kind: 'agent', result: { text: 'report' } });
+  });
+});
+
+describe('set_status items', () => {
+  it('turns done and important into rows and numbers node revisions', () => {
+    const status = (input: Record<string, unknown>) => tool('mcp__designview__set_status', input);
+    const items = buildTranscript([status({ text: 'a', done: 'Header built', nodes: ['1:2'] }), status({ text: 'b', done: ' ', important: ' ' }), status({ text: 'c', done: 'Header fixed', nodes: ['1:2'], important: 'Token missing' })]);
+    expect(items.map((i) => i.kind)).toEqual(['done', 'done', 'note']);
+    expect(items[0]).toMatchObject({ text: 'Header built', nodes: [['1:2', 1]] });
+    expect(items[1]).toMatchObject({ nodes: [['1:2', 2]] });
+  });
+});
+
+describe('groupTurns', () => {
+  it('puts the tools and earlier replies of a turn in one group before the last reply', () => {
+    const r = tool('Read', { file_path: '/w/app/a.ts' });
+    const e = edit('/w/app/a.ts', 'x', 'y');
+    const turns = groupTurns(buildTranscript([user('go'), say('Looking'), r, result(r.id), e, result(e.id), say('Done')]));
+    expect(turns).toHaveLength(1);
+    expect(turns[0].blocks.map((b) => b.kind)).toEqual(['user', 'steps', 'assistant']);
+    const group = turns[0].blocks[1];
+    expect(group).toMatchObject({ kind: 'steps', count: 2 });
+    expect(group.kind === 'steps' && group.items.map((i) => i.kind)).toEqual(['assistant', 'step', 'file']);
+  });
+
+  it('keeps Fable rows, done rows and a reply that precedes the tools outside the group', () => {
+    const fable = tool('Agent', { description: 'Ask', subagent_type: 'big-bro' });
+    const other = tool('Task', { description: 'Look', subagent_type: 'Explore' });
+    const status = tool('mcp__designview__set_status', { text: 'x', done: 'Part one' });
+    const turns = groupTurns(buildTranscript([user('go'), say('Plan'), fable, status, other]));
+    expect(turns[0].blocks.map((b) => b.kind)).toEqual(['user', 'assistant', 'agent', 'done', 'steps']);
+  });
+
+  it('starts a new turn at each prompt and leaves tool-free turns ungrouped', () => {
+    const r = tool('Read', { file_path: '/w/app/a.ts' });
+    const turns = groupTurns(buildTranscript([user('a'), say('hi'), user('b'), r, say('ok')]));
+    expect(turns.map((t) => t.blocks.map((b) => b.kind))).toEqual([['user', 'assistant'], ['user', 'steps', 'assistant']]);
+  });
+
+  it('sums the time between the first and last step', () => {
+    const a = tool('Read', { file_path: 'x' });
+    const ra = result(a.id);
+    ra.at = a.at + 5000;
+    const group = groupTurns(buildTranscript([user('go'), a, ra]))[0].blocks[1];
+    expect(group).toMatchObject({ kind: 'steps', ms: 5000 });
   });
 });
 

@@ -11,11 +11,17 @@ export type Item =
   | { kind: 'system'; id: string; text: string }
   | { kind: 'step'; id: string; use: ToolUse; result?: ToolResult }
   | { kind: 'file'; id: string; path: string; count: EditCount; uses: ToolUse[]; error?: string }
-  | { kind: 'agent'; id: string; use: ToolUse; result?: ToolResult };
+  | { kind: 'agent'; id: string; use: ToolUse; result?: ToolResult }
+  | { kind: 'done'; id: string; text: string; nodes: Array<[string, number]> }
+  | { kind: 'note'; id: string; text: string };
+
+export type Block = Item | { kind: 'steps'; id: string; items: Item[]; count: number; ms: number };
+export type Turn = { id: string; blocks: Block[] };
 
 export type Label = { verb: string; object: string; mono?: boolean };
 
 const AGENT_TOOLS = new Set(['Agent', 'Task']);
+const BIG_BRO = 'big-bro';
 
 export const firstLine = (text: string) => text.trim().split('\n')[0] ?? '';
 
@@ -67,12 +73,25 @@ export function buildTranscript(events: ChatEvent[]): Item[] {
   const results = new Map<string, ToolResult>();
   for (const e of events) if (e.kind === 'tool_result') results.set(e.toolUseId, e);
   const items: Item[] = [];
+  const seen = new Map<string, number>();
   for (const e of events) {
-    if (e.kind === 'user') items.push(e.phase ? { kind: 'phase', id: e.id, text: e.text } : { kind: 'user', id: e.id, text: e.text, at: e.at, stopping: e.stopping });
+    if (e.kind === 'tool_use' && e.name.endsWith('__set_status')) {
+      const ids = Array.isArray(e.input.nodes) ? e.input.nodes.filter((x): x is string => typeof x === 'string').slice(-3) : [];
+      const nodes = ids.map((id): [string, number] => {
+        const rev = (seen.get(id) ?? 0) + 1;
+        seen.set(id, rev);
+        return [id, rev];
+      });
+      const done = typeof e.input.done === 'string' ? e.input.done.trim() : '';
+      const note = typeof e.input.important === 'string' ? e.input.important.trim() : '';
+      if (done) items.push({ kind: 'done', id: e.id, text: done, nodes });
+      if (note) items.push({ kind: 'note', id: `${e.id}:note`, text: note });
+    }
+    else if (e.kind === 'user') items.push(e.phase ? { kind: 'phase', id: e.id, text: e.text } : { kind: 'user', id: e.id, text: e.text, at: e.at, stopping: e.stopping });
     else if (e.kind === 'assistant') { if (e.text.trim()) items.push({ kind: 'assistant', id: e.id, text: e.text, streaming: e.streaming }); }
     else if (e.kind === 'system') items.push({ kind: 'system', id: e.id, text: e.text });
     else if (e.kind === 'plan') items.push({ kind: 'system', id: e.id, text: e.next.length ? `You changed the next steps (${e.next.length})` : 'You cleared the next steps' });
-    else if (e.kind === 'tool_use' && !e.name.endsWith('__set_status')) {
+    else if (e.kind === 'tool_use') {
       const result = results.get(e.id);
       const count = editCount(e.name, e.input);
       const path = typeof e.input.file_path === 'string' ? e.input.file_path : '';
@@ -89,4 +108,40 @@ export function buildTranscript(events: ChatEvent[]): Item[] {
     }
   }
   return items;
+}
+
+const isTool = (it: Item) => it.kind === 'step' || it.kind === 'file' || it.kind === 'agent';
+const isFable = (it: Item) => it.kind === 'agent' && it.use.input.subagent_type === BIG_BRO;
+
+function span(items: Item[]) {
+  const times: number[] = [];
+  for (const it of items) {
+    if (it.kind === 'file') times.push(...it.uses.map((u) => u.at));
+    else if (it.kind === 'step' || it.kind === 'agent') times.push(it.use.at, ...(it.result ? [it.result.at] : []));
+  }
+  return times.length ? Math.max(...times) - Math.min(...times) : 0;
+}
+
+export function groupTurns(items: Item[]): Turn[] {
+  const segs: Item[][] = [];
+  for (const it of items) {
+    if (it.kind === 'user' || it.kind === 'phase' || !segs.length) segs.push([it]);
+    else segs[segs.length - 1].push(it);
+  }
+  return segs.map((seg) => {
+    let final = -1;
+    let lastTool = -1;
+    seg.forEach((it, i) => {
+      if (it.kind === 'assistant') final = i;
+      if (isTool(it) && !isFable(it)) lastTool = i;
+    });
+    const inside = seg.filter((it, i) => (isTool(it) && !isFable(it)) || (it.kind === 'assistant' && i !== final));
+    const tools = inside.filter(isTool);
+    if (!tools.length) return { id: seg[0].id, blocks: seg };
+    const finalItem = final > lastTool ? seg[final] : undefined;
+    const blocks: Block[] = seg.filter((it) => !inside.includes(it));
+    const group: Block = { kind: 'steps', id: `${tools[0].id}:steps`, items: inside, count: tools.length, ms: span(tools) };
+    blocks.splice(finalItem ? blocks.indexOf(finalItem) : blocks.length, 0, group);
+    return { id: seg[0].id, blocks };
+  });
 }

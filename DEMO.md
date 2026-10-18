@@ -214,6 +214,15 @@ Sketch instead.
 
 Try: switch the composer to Design and send a brief; the card appears below your message.
 
+## 25. One conversation view
+
+The Timeline and Transcript tabs are merged. Each turn shows your message, Claude's progress lines (with
+Figma frame thumbnails), important notes, Fable reviews, and Claude's full reply. All tool calls of a turn
+sit in one collapsed "n steps" row with the total time; click it to see every step. While Claude works,
+that row shows the current step. Read aloud moved into the status line.
+
+Try: open any chat with history and click "n steps" above a reply.
+
 ## Open questions for you
 
 - "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a

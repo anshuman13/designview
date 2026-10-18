@@ -21,7 +21,7 @@
 
 .tr-system { padding-left: 24px; font-size: var(--text-sm); color: var(--fg-faint); }
 
-.tr-step, .tr-agent, .tr-working {
+.tr-step, .tr-agent, .tr-working, .tr-done, .tr-note, .tr-steps-head {
   display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; column-gap: 8px; align-items: center;
   min-height: 22px; line-height: 22px; font-size: var(--text-sm); color: var(--fg-muted);
   border-radius: var(--radius-sm, 4px); cursor: pointer;
@@ -75,6 +75,13 @@
   background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius-sm, 4px);
 }
 
+.tr-done .tr-mark { color: var(--ok); }
+.tr-note .tr-mark { color: var(--warn); }
+.tr-done, .tr-note { cursor: default; align-items: start; }
+.tr-done .tr-text, .tr-note .tr-text { white-space: normal; line-height: 22px; color: var(--fg); }
+.tr-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.tr-steps-head:hover { color: var(--fg); }
+.tr-steps-body { display: flex; flex-direction: column; gap: 2px; margin: 2px 0 0 7px; padding-left: 9px; border-left: 1px solid var(--border); }
 .tr-working { cursor: default; color: var(--fg-muted); }
 .tr-working .tr-mark { color: var(--fg-muted); }
 
@@ -82,24 +89,14 @@
 
 @media (max-width: 900px) {
   .tr { padding: 10px 16px 14px; font-size: var(--text-md); }
-  .tr-step, .tr-agent, .tr-working { min-height: 28px; line-height: 28px; font-size: var(--text-md); }
+  .tr-step, .tr-agent, .tr-working, .tr-done, .tr-note, .tr-steps-head { min-height: 28px; line-height: 28px; font-size: var(--text-md); }
   .tr-mark { height: 28px; }
   .tr-file { min-height: 44px; font-size: var(--text-md); }
   .tr-user { padding: 12px 14px; }
   .tr-step, .tr-agent { min-height: 36px; line-height: 36px; }
   .tr-mark { height: 36px; }
   .tr-detail pre, .tr-report { font-size: var(--text-sm); max-height: 40vh; }
-  .tl-tabs { gap: 4px; }
-  .tl-tabs button { min-height: 36px; padding: 0 14px; font-size: var(--text-md); }
 }
 
-.tl-tabs { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--border); border-radius: var(--radius-sm, 4px); background: var(--bg-sunken); }
-.tl-tabs button { border: 0; background: none; color: var(--fg-muted); font: inherit; font-size: var(--text-xs); padding: 1px 8px; border-radius: 3px; cursor: pointer; }
-.tl-tabs button.on { background: var(--bg-raised); color: var(--fg); }
-.tl-tabs button:hover { color: var(--fg); }
-
-.tl.phase { padding-top: 10px; }
-.tl.phase .mark, .tl.phase .text { color: var(--agent); }
-.tl.phase .text { font-weight: 600; font-size: var(--text-sm); letter-spacing: 0.02em; }
 .tr-phase { display: flex; align-items: center; gap: 8px; margin: 14px 0 4px; color: var(--agent); font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.02em; }
 .tr-phase::after { content: ''; flex: 1; height: 1px; background: var(--border); }
