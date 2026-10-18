@@ -225,6 +225,10 @@ copy of the file outline, so a page makes at most one Figma outline call per fil
 can take up to a minute to show in those lists, or click the refresh button next to Show in Chrome in the File
 panel to reload it everywhere at once.
 
+**Error boundaries.** If the chat column, a canvas tab or a sidebar panel hits a render error, only that area shows
+"This panel hit an error" with the message and a Reload button; the rest of the app keeps working. Events that name an
+unknown sidebar view are ignored instead of blanking the page.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.

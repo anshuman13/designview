@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { connect, getJson, useStore } from './store';
 import { Brief } from './panes/Brief';
+import { ErrorBoundary } from './ErrorBoundary';
 import { Terminal } from './panes/Terminal';
 import { CodePane } from './panes/CodePane';
 import { BrowserPane } from './panes/BrowserPane';
@@ -27,9 +28,12 @@ import { canNotify, toggleNotify, useNotify } from './notify';
 import './page.css';
 import './design.css';
 
-type View = 'chats' | 'files' | 'system' | 'explorer';
 type Center = 'figma' | 'sketch' | 'review' | 'preview' | 'code';
 type Tab = 'chat' | 'figma' | 'sketch' | 'review' | 'more';
+
+const VIEW_IDS = ['chats', 'files', 'system', 'explorer'] as const;
+type View = (typeof VIEW_IDS)[number];
+const isView = (v: unknown): v is View => VIEW_IDS.some((x) => x === v);
 
 const VIEWS: { id: View; icon: string; title: string; dev?: boolean }[] = [
   { id: 'chats', icon: 'comment-discussion', title: 'Chats' },
@@ -211,7 +215,7 @@ export function App() {
       if (kind === 'view') {
         if (arg === 'comments') openSection('files', 'comments');
         else if (arg === 'rules') openSection('system', 'rules');
-        else { setView(arg as View); setSidebar(true); if (narrow()) setTab('more'); }
+        else if (isView(arg)) { setView(arg); setSidebar(true); if (narrow()) setTab('more'); }
       }
       else if (kind === 'page') { if (arg === 'settings') setSettings(true); else open(arg as Center); }
       else if (kind === 'focus') { if (!narrow()) toggleFocus(); }
@@ -219,7 +223,9 @@ export function App() {
       else if (kind === 'tab') setTab(arg as Tab);
     };
     const onSection = (e: Event) => {
-      setView((e as CustomEvent<{ view: View }>).detail.view);
+      const next = (e as CustomEvent<{ view?: unknown }>).detail?.view;
+      if (!isView(next)) return;
+      setView(next);
       setSidebar(true);
       if (narrow()) setTab('more');
     };
@@ -267,14 +273,16 @@ export function App() {
         </aside>
 
         <section className="sidebar pane side">
-          <div className="sidebar-title">{VIEWS.find((v) => v.id === view)!.title}</div>
+          <div className="sidebar-title">{(VIEWS.find((v) => v.id === view) ?? VIEWS[0]).title}</div>
           {tab === 'more' && (
             <div className="side-switch mobile-only">
               {views.map((v) => <button key={v.id} className={view === v.id ? 'active' : ''} onClick={() => setView(v.id)}>{v.title}</button>)}
               <button onClick={() => setSettings(true)}>Settings</button>
             </div>
           )}
-          {view === 'chats' ? <Chats /> : view === 'files' ? <Files /> : view === 'system' ? <DesignSystem /> : <Explorer />}
+          <ErrorBoundary label="sidebar">
+            {view === 'chats' ? <Chats /> : view === 'files' ? <Files /> : view === 'system' ? <DesignSystem /> : <Explorer />}
+          </ErrorBoundary>
         </section>
 
         <section className="editor-group pane code">
@@ -288,11 +296,13 @@ export function App() {
             <span className="spacer" />
             <button className="icon-btn focus-btn desktop-only" title={focusMode ? 'Exit focus mode (⌘.)' : 'Focus mode (⌘.)'} onClick={toggleFocus}><Icon name={focusMode ? 'screen-normal' : 'screen-full'} small /></button>
           </div>
+          <ErrorBoundary label="panel">
           <div className={`editor browser ${shownCenter === 'figma' ? 'shown' : ''}`}>{shownCenter === 'figma' && <BrowserPane />}</div>
           <div className={`editor ${shownCenter === 'sketch' ? 'shown' : ''}`}>{shownCenter === 'sketch' && <Sketch />}</div>
           <div className={`editor ${shownCenter === 'review' ? 'shown' : ''}`}>{shownCenter === 'review' && <Review dev={dev} />}</div>
           <div className={`editor ${shownCenter === 'preview' ? 'shown' : ''}`}>{shownCenter === 'preview' && <Preview />}</div>
           {dev && <div className={`editor ${shownCenter === 'code' ? 'shown' : ''}`}><CodePane /></div>}
+          </ErrorBoundary>
           {focusMode && (
             <div className="focus-pill desktop-only">
               <Icon name={session.running ? 'loading' : 'circle-large-outline'} small spin={session.running} />
@@ -313,7 +323,9 @@ export function App() {
         <div className="sash desktop-only" onPointerDown={startResize} />
 
         <section className="main pane center">
-          <Brief />
+          <ErrorBoundary label="chat">
+            <Brief />
+          </ErrorBoundary>
         </section>
       </div>
 
