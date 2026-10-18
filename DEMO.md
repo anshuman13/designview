@@ -206,6 +206,10 @@ New chat in More, Chats, and `#` rows cut long frame names short so the page nam
 with its verdict and labelled points) and a copy pass has "Copy as table" (a Markdown table of before, after and
 reason). Both work on the sample tour's crit and copy runs.
 
+**Link from another file.** In a chat that already has a file, paste a Figma link to a different file and the composer
+shows "Open <name> in its own chat?". Open switches to that file's chat (it reuses one if it exists) and moves the
+typed text there. Untested with a real second file so far.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.

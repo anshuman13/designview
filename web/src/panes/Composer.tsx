@@ -221,7 +221,9 @@ export function Composer() {
   const thumb = useThumbs(trigger?.kind === 'frame' ? figmaKey : undefined, trigger?.kind === 'frame' ? items.map((r) => [(r.item as FrameRef).id, 0]) : []);
   const history = useMemo(() => buildHistory(events, stored), [events, stored]);
   const ghost = !open && !shell && at === text.length ? ghostFor(text, history) : '';
-  const link = useMemo(() => (hasFile ? null : figmaLinkIn(text)), [hasFile, text]);
+  const found = useMemo(() => figmaLinkIn(text), [text]);
+  const link = found && (!hasFile || found.key !== figmaKey) ? found : null;
+  const carry = useRef<{ text: string; from: string; at: number } | null>(null);
   const edited = useMemo(() => filesEdited(events), [events]);
   const pct = contextPercent(context);
   const setMode = (mode: FlowMode) => send({ type: 'set_flow', patch: { mode } });
@@ -302,7 +304,10 @@ export function Composer() {
   const textRef = useRef(text);
   textRef.current = text;
   useEffect(() => {
-    const saved = drafts.get(chatId) ?? '';
+    const moved = carry.current && carry.current.from !== chatId && Date.now() - carry.current.at < 10_000 ? carry.current : null;
+    if (moved) drafts.delete(moved.from);
+    if (carry.current?.from !== chatId) carry.current = null;
+    const saved = moved?.text ?? drafts.get(chatId) ?? '';
     if (saved !== textRef.current) apply(saved);
     setHist(null);
     return () => { drafts.set(chatId, textRef.current); };
@@ -413,8 +418,8 @@ export function Composer() {
         {link && link.url !== skipLink && (
           <div className="cp-attach">
             <Icon name="file-media" small />
-            <span>Attach {link.name}?</span>
-            <button className="primary" onClick={() => send({ type: 'set_figma', url: link.url })}>Attach</button>
+            <span>{hasFile ? `Open ${link.name} in its own chat?` : `Attach ${link.name}?`}</span>
+            <button className="primary" onClick={() => { if (hasFile) carry.current = { text, from: chatId, at: Date.now() }; send({ type: 'set_figma', url: link.url }); }}>{hasFile ? 'Open' : 'Attach'}</button>
             <button className="icon-btn" title="Dismiss" aria-label="Dismiss" onClick={() => setSkipLink(link.url)}><Icon name="close" small /></button>
           </div>
         )}
