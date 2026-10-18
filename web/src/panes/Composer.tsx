@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { api, getJson, notice, send, steer, useStore } from '../store';
+import { api, notice, send, steer, useStore } from '../store';
 import { Icon } from '../Icon';
 import { Voice, useDictation } from './Voice';
 import { FileIcon } from './Explorer';
@@ -10,6 +10,7 @@ import { recipeText, useCustomRecipes } from '../recipes';
 import { RECIPES, toRecipe, type Recipe } from '../../../shared/recipes';
 import { imageProblem, imagesIn } from './attach';
 import { useThumbs } from '../useThumbs';
+import { useOutline } from '../outline';
 import '../composer.css';
 
 export type Trigger = { kind: 'command' | 'file' | 'frame'; start: number; query: string } | { kind: 'shell' } | null;
@@ -185,7 +186,6 @@ export function Composer() {
   const [dismissed, setDismissed] = useState('');
   const [skipLink, setSkipLink] = useState('');
   const [files, setFiles] = useState<string[]>([]);
-  const [loaded, setLoaded] = useState<{ key: string; list: FrameRef[] } | null>(null);
   const [stored, setStored] = useState(readStored);
   const [hist, setHist] = useState<Hist | null>(null);
   const [imgs, setImgs] = useState<Img[]>([]);
@@ -208,7 +208,8 @@ export function Composer() {
   const trigger = useMemo(() => triggerAt(text, at), [text, at]);
   const shell = trigger?.kind === 'shell';
   const popKey = trigger && trigger.kind !== 'shell' ? `${trigger.kind}:${trigger.start}:${trigger.query}` : '';
-  const frames = useMemo(() => (loaded && loaded.key === figmaKey ? loaded.list : []), [loaded, figmaKey]);
+  const outline = useOutline(trigger?.kind === 'frame' ? figmaKey : undefined);
+  const frames = useMemo(() => outline?.pages.flatMap((p) => p.frames) ?? [], [outline]);
   const frameMode = trigger?.kind === 'frame';
   const recent = useMemo(() => (frameMode ? recentFrameIds(events) : []), [frameMode, events]);
   const items = useMemo(() => {
@@ -244,15 +245,6 @@ export function Composer() {
     if (cached) { setFiles(cached); return; }
     fetch(api('/api/files')).then((r) => r.json()).then((f: string[]) => { fileCache.set(cwd, f); setFiles(f); }).catch(() => {});
   }, [trigger?.kind, cwd]);
-
-  useEffect(() => {
-    if (trigger?.kind !== 'frame' || !figmaKey || loaded?.key === figmaKey) return;
-    let live = true;
-    getJson<{ pages: Array<{ frames: FrameRef[] }> }>('/api/figma/outline')
-      .then((o) => { if (live) setLoaded({ key: figmaKey, list: o.pages.flatMap((p) => p.frames) }); })
-      .catch(() => {});
-    return () => { live = false; };
-  }, [trigger?.kind, figmaKey, loaded?.key]);
 
   useEffect(() => setSel(0), [popKey]);
 

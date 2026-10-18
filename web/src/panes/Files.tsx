@@ -6,9 +6,8 @@ import { Changes } from './Changes';
 import { Comments } from './Comments';
 import { Section } from '../Section';
 import { figmaNodeUrl } from '../../../shared/design';
+import { getOutline, type Outline } from '../outline';
 
-type Frame = { id: string; name: string; page: string; type: string; w: number; h: number };
-type Outline = { name: string; pages: Array<{ id: string; name: string; frames: Frame[] }> };
 type Project = { id: string; name: string };
 type FileRow = { key: string; name: string; thumbnail_url: string; last_modified: string };
 
@@ -28,7 +27,7 @@ export function Files() {
     setOutline(null);
     setError('');
     if (!figma) return;
-    getJson<Outline>('/api/figma/outline')
+    getOutline(figma.key)
       .then((o) => {
         setOutline(o);
         const ids = o.pages.flatMap((p) => p.frames.slice(0, 12).map((f) => f.id)).slice(0, 60);

@@ -217,6 +217,10 @@ one outline request shared by the whole page and refreshed at most once a minute
 **Retry a failed review.** When a reviewer failed (timeout, tool error), its row says "failed" and the review card gets
 "Retry", which puts `/review <same preset> <same frames>` in the composer for you to send.
 
+**One outline request.** The Files panel, `#` frames, recipes, review cards, Changes and Build check share one cached
+copy of the file outline, so a page makes at most one Figma outline call per file per minute. A frame Claude just added
+can take up to a minute to show in those lists.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.

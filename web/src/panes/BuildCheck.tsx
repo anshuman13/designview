@@ -4,8 +4,7 @@ import { Icon } from '../Icon';
 import { buildChecklist, figmaNodeUrl, type BuildRun, type DesignDoc } from '../../../shared/design';
 import { showNode, insertPrompt } from './Files';
 import { Empty, ReviewArt } from './Empty';
-
-type Outline = { pages: Array<{ frames: Array<{ id: string; name: string }> }> };
+import { getOutline } from '../outline';
 
 const SEV = { blocking: 'Blocking', major: 'Major', minor: 'Minor' } as const;
 const when = (t: number) => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -83,7 +82,7 @@ export function BuildCheck() {
   useEffect(() => {
     setFrame(null);
     if (!figma) return;
-    Promise.all([getJson<Outline>('/api/figma/outline'), getJson<DesignDoc>('/api/design').catch((): DesignDoc => ({ frames: [] }))])
+    Promise.all([getOutline(figma.key), getJson<DesignDoc>('/api/design').catch((): DesignDoc => ({ frames: [] }))])
       .then(([o, d]) => {
         const all = o.pages.flatMap((p) => p.frames);
         const id = focus && all.some((f) => f.id === focus) ? focus : (d.frames[0]?.nodeId ?? all[0]?.id);

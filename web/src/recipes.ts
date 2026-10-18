@@ -3,14 +3,13 @@ import { getJson, getState, postJson, send } from './store';
 import { insertPrompt } from './panes/Files';
 import { RECIPES, recipePrompt, toRecipe, type CustomRecipe, type Recipe } from '../../shared/recipes';
 import { figmaNodeUrl } from '../../shared/design';
-
-type Outline = { pages: Array<{ frames: Array<{ id: string; name: string }> }> };
+import { getOutline } from './outline';
 
 async function selectedFrames() {
   const { figma } = getState().session;
   const focus = getState().ui.focus;
   if (!figma || !focus) return null;
-  const outline = await getJson<Outline>('/api/figma/outline').catch(() => null);
+  const outline = await getOutline(figma.key).catch(() => null);
   const name = outline?.pages.flatMap((p) => p.frames).find((f) => f.id === focus)?.name;
   return `${name ?? focus} (${figmaNodeUrl(figma.key, focus)})`;
 }

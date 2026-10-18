@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { getJson, useStore } from '../store';
 import { ReviewArt, Empty } from './Empty';
 import type { DesignDoc } from '../../../shared/design';
+import { getOutline, type Outline } from '../outline';
 
 type Version = { id: string; at: string; label: string; description: string; user: string; checkpoint: boolean };
-type Outline = { pages: Array<{ frames: Array<{ id: string; name: string }> }> };
+type FrameRow = Outline["pages"][number]["frames"][number];
 type Urls = Record<string, string | null>;
 
 const EMPTY = 'Every time Claude edits Figma it saves a version first. Compare any version with now, side by side or with a slider.';
@@ -19,7 +20,7 @@ export function Changes() {
   const figma = useStore((s) => s.session.figma);
   const chat = useStore((s) => s.session.id);
   const [versions, setVersions] = useState<Version[] | null>(null);
-  const [frames, setFrames] = useState<Array<{ id: string; name: string }>>([]);
+  const [frames, setFrames] = useState<FrameRow[]>([]);
   const [error, setError] = useState('');
   const [versionId, setVersionId] = useState<string | null>(null);
   const [frameId, setFrameId] = useState<string | null>(null);
@@ -32,10 +33,10 @@ export function Changes() {
     setFrameId(null);
     if (!figma) return;
     getJson<Version[]>('/api/figma/versions').then((v) => { setVersions(v); setVersionId(v[0]?.id ?? null); }).catch((e) => setError(e.message));
-    Promise.all([getJson<Outline>('/api/figma/outline'), getJson<DesignDoc>('/api/design').catch((): DesignDoc => ({ frames: [] }))])
+    Promise.all([getOutline(figma.key), getJson<DesignDoc>('/api/design').catch((): DesignDoc => ({ frames: [] }))])
       .then(([o, d]) => {
         const all = o.pages.flatMap((p) => p.frames);
-        const mine = d.frames.map((f) => all.find((a) => a.id === f.nodeId)).filter((f): f is { id: string; name: string } => !!f);
+        const mine = d.frames.map((f) => all.find((a) => a.id === f.nodeId)).filter((f): f is FrameRow => !!f);
         const list = [...new Map([...mine, ...all].map((f) => [f.id, f])).values()];
         setFrames(list);
         setFrameId(list[0]?.id ?? null);

@@ -1,29 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getJson } from './store';
 
-export type Outline = { name: string; lastModified: string; pages: Array<{ id: string; name: string; frames: Array<{ id: string; name: string; page: string }> }> };
+export type Outline = { name: string; lastModified: string; pages: Array<{ id: string; name: string; frames: Array<{ id: string; name: string; page: string; w?: number; h?: number }> }> };
 
-const cache = new Map<string, { promise: Promise<Outline | null>; at: number }>();
+const cache = new Map<string, { promise: Promise<Outline>; at: number }>();
 
-export function getOutline(key: string): Promise<Outline | null> {
+export function getOutline(key: string, fresh = false): Promise<Outline> {
   const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < 60_000) return hit.promise;
-  const promise = getJson<Outline>('/api/figma/outline').catch(() => {
-    if (cache.get(key)?.promise === promise) cache.delete(key);
-    return null;
-  });
+  if (!fresh && hit && Date.now() - hit.at < 60_000) return hit.promise;
+  const promise = getJson<Outline>('/api/figma/outline');
+  promise.catch(() => { if (cache.get(key)?.promise === promise) cache.delete(key); });
   cache.set(key, { promise, at: Date.now() });
   return promise;
 }
 
-export function useOutline(key: string | undefined): Outline | null {
+export function useOutline(key: string | undefined, rev = 0): Outline | null {
   const [outline, setOutline] = useState<Outline | null>(null);
+  const first = useRef(rev);
   useEffect(() => {
     if (!key) return setOutline(null);
     let live = true;
-    void getOutline(key).then((o) => live && setOutline(o));
+    getOutline(key, rev !== first.current).then((o) => live && setOutline(o), () => live && setOutline(null));
     return () => { live = false; };
-  }, [key]);
+  }, [key, rev]);
   return key ? outline : null;
 }
 
