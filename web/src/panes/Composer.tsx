@@ -53,6 +53,8 @@ export const rankFiles = (files: string[], query: string, limit = MAX_ROWS) => r
 
 export type FrameRef = { id: string; name: string; page: string };
 
+const ATTACH_ROW: FrameRef = { id: '', name: 'Attach a Figma file to list its frames', page: '' };
+
 export const rankFrames = (frames: FrameRef[], query: string, limit = MAX_ROWS) => rank(frames, (f) => f.name, query, limit);
 
 export function recentFrameIds(events: ChatEvent[]): string[] {
@@ -215,9 +217,9 @@ export function Composer() {
   const items = useMemo(() => {
     if (!trigger || trigger.kind === 'shell' || popKey === dismissed) return [];
     if (trigger.kind === 'command') return rankCommands(commands, trigger.query, MAX_COMMANDS);
-    if (trigger.kind === 'frame') return rankFrames(trigger.query ? frames : recentFirst(frames, recent), trigger.query);
+    if (trigger.kind === 'frame') return !figmaKey && !trigger.query ? [{ item: ATTACH_ROW, hits: [], score: 0 }] : rankFrames(trigger.query ? frames : recentFirst(frames, recent), trigger.query);
     return rankFiles(files, trigger.query);
-  }, [trigger, popKey, dismissed, commands, files, frames, recent]);
+  }, [trigger, popKey, dismissed, commands, files, frames, recent, figmaKey]);
   const open = items.length > 0;
   const thumb = useThumbs(trigger?.kind === 'frame' ? figmaKey : undefined, trigger?.kind === 'frame' ? items.map((r) => [(r.item as FrameRef).id, 0]) : []);
   const history = useMemo(() => buildHistory(events, stored), [events, stored]);
@@ -345,6 +347,7 @@ export function Composer() {
       apply(r.text, r.caret);
     };
     if (recipe) { void recipeText(recipe).then(done); return; }
+    if (item === ATTACH_ROW) { setDismissed(popKey); window.dispatchEvent(new Event('designview:attach')); return; }
     if (trigger.kind === 'frame') { const f = item as FrameRef; done(`${f.name} (${figmaNodeUrl(figmaKey!, f.id)})`); return; }
     done(trigger.kind === 'command' ? `/${(item as SlashCommand).name}` : `@${item as string}`);
   };
@@ -510,7 +513,7 @@ export function Composer() {
               const f = r.item as FrameRef;
               return (
                 <li key={f.id} role="option" aria-selected={i === sel} className={i === sel ? 'active' : ''} onMouseDown={(e) => { e.preventDefault(); choose(i); }}>
-                  <span className="cp-thumb">{thumb(f.id) && <img src={thumb(f.id)!} alt="" />}</span>
+                  {f === ATTACH_ROW ? <Icon name="file-media" small /> : <span className="cp-thumb">{thumb(f.id) && <img src={thumb(f.id)!} alt="" />}</span>}
                   <span className="cp-name">{hl(f.name, r.hits)}</span>
                   <span className="cp-detail">{f.page}</span>
                 </li>
