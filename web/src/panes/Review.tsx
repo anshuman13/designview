@@ -56,7 +56,6 @@ export function Review({ dev = false }: { dev?: boolean }) {
                   <span className={`run-kind ${row.kind}`}>{KIND_LABEL[row.kind]}</span>
                   <span className="muted" title={when(row.at)}>{ago(row.at)}</span>
                   <span className="run-sum">{summarize(row)}</span>
-                  {row.tokens > 0 && <span className="chip" title="Tokens this run used">{k(row.tokens)}</span>}
                 </button>
                 {on && <div className="run-detail"><RunDetail row={row} doc={doc} onDoc={setDoc} /></div>}
               </li>
@@ -102,7 +101,7 @@ function ReviewDetail({ run, doc, onDoc }: { run: ReviewRun; doc: ReviewDoc; onD
     <>
       <div className="review-summary">
         <div><b>{runLabel(run)}</b> · {when(run.at)} · {run.frames.length} frames</div>
-        <div className="muted">{run.tokens ? `${k(run.tokens)} tokens · $${run.costUsd.toFixed(2)}` : 'No model tokens used'}</div>
+        <div className="muted">{run.tokens ? `${k(run.tokens)} tokens · $${run.costUsd.toFixed(2)}` : 'No tokens used'}</div>
         {pending.length > 0 && <button disabled={posting} onClick={post}><Icon name="comment" small /> Post {pending.length} as Figma comments</button>}
         {note && <span className="muted">{note}</span>}
       </div>

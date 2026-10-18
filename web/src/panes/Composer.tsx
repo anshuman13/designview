@@ -17,7 +17,7 @@ export type Ranked<T> = { item: T; hits: number[]; score: number };
 
 export const MODE_INFO: Record<FlowMode, { label: string; detail: string; placeholder: string; icon: string }> = {
   chat: { label: 'Chat', detail: 'Talk to Claude. Edits Figma when you ask.', placeholder: 'Ask Claude anything, or paste a Figma link', icon: 'comment' },
-  design: { label: 'Design', detail: 'Opus plans, then Claude sketches, designs and reviews.', placeholder: 'Describe the screens you need. Opus plans, then Claude sketches, designs and reviews.', icon: 'sparkle' },
+  design: { label: 'Design', detail: 'Claude plans, sketches, designs and reviews.', placeholder: 'Describe the screens you need. Claude plans, sketches, designs and reviews.', icon: 'sparkle' },
   review: { label: 'Review', detail: 'Reviewers check the frames. No edits.', placeholder: 'What should the reviewers look at?', icon: 'checklist' },
 };
 

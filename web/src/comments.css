@@ -9,7 +9,7 @@
 .cm-item { padding: 10px 0; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
 .cm-item.resolved { opacity: 0.6; }
 .cm-head, .cm-meta, .cm-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.cm-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: var(--bg-hover); color: var(--fg-muted); font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.cm-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: var(--bg-hover); color: var(--fg-muted); font-size: var(--text-xs); font-weight: 600; display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .cm-handle { font-weight: 600; font-size: var(--text-sm); }
 .cm-time { color: var(--fg-muted); font-size: var(--text-xs); }
 .cm-message { background: transparent; text-align: left; padding: 0; font-size: var(--text-sm); line-height: 1.45; color: var(--fg); white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }

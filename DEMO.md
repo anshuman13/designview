@@ -287,6 +287,16 @@ collapsible section at the bottom. Sections remember whether they are open. "Vie
 
 Try: Sample tour, then the File icon, open Comments; then the palette icon for the design system.
 
+## 33. Theme pass
+
+One type scale (16 body, 14 secondary, 13 labels). Serif only for the wordmark, page titles and headings
+in Claude's replies. No model names in the UI apart from one line in Settings. No shadows except on
+popovers, menus and dialogs; cards inside panels use a tint instead of a second border. The top bar status
+shows only on narrow screens, where the conversation status line is hidden. Token counts appear only in the
+spend pill, the run card and review cards. Rail icons are no longer colored per panel.
+
+Try: compare the Review tab and Settings with the screenshots in earlier sections.
+
 ## Open questions for you
 
 - "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a

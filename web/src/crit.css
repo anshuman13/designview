@@ -1,7 +1,7 @@
 .review-bar a.ghost { color: var(--fg-muted); padding: 4px 6px; border-radius: 6px; line-height: 1; }
 .review-bar a.ghost:hover { background: var(--bg-hover); color: var(--fg); }
 .crit-head { display: flex; flex-direction: column; gap: 6px; }
-.crit-summary { margin: 0; font-family: var(--serif); font-size: var(--text-lg); line-height: 1.4; max-width: 70ch; }
+.crit-summary { margin: 0; font-size: var(--text-lg); line-height: 1.4; max-width: 70ch; }
 .crit-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .crit-card { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .crit-card header { display: flex; align-items: center; gap: 10px; }

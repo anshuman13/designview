@@ -74,7 +74,6 @@ export function Chats() {
         <div className={`row session sample ${sampleBusy ? 'busy' : ''}`} title="Open the sample chat" onClick={() => sampleBusy || void openSample()}>
           <span className="twistie"><Icon name="play" small /></span>
           <span className="name">Sample tour</span>
-          <span className="when">no tokens</span>
         </div>
         {sampleError && <div className="hint error-text">{sampleError}</div>}
         {groups.map((g) => (

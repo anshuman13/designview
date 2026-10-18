@@ -115,7 +115,7 @@ pre.wrap { white-space: pre-wrap; word-break: break-word; font-family: inherit; 
 .icon-btn:disabled { opacity: 0.4; cursor: default; }
 .empty-state { margin: auto; max-width: 300px; padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
 .empty-state > .codicon.icon { font-size: 40px; color: var(--fg-faint); margin-bottom: 6px; }
-.empty-title { font-family: var(--serif); color: var(--fg); font-size: var(--text-md); }
+.empty-title { color: var(--fg); font-size: var(--text-md); }
 
 .workbench { height: 100%; display: flex; flex-direction: column; }
 .body { flex: 1; min-height: 0; display: flex; }
@@ -133,16 +133,8 @@ pre.wrap { white-space: pre-wrap; word-break: break-word; font-family: inherit; 
 }
 .activitybar button:hover { color: var(--fg); }
 .activitybar button.active { color: var(--fg); border-left-color: var(--accent); }
-.activitybar button[data-view] { color: var(--vc); opacity: 0.7; }
-.activitybar button[data-view]:hover, .activitybar button[data-view].active { color: var(--vc); opacity: 1; }
-.activitybar button[data-view='explorer'] { --vc: var(--prompt); }
-.activitybar button[data-view='changes'] { --vc: var(--warn); }
-.activitybar button[data-view='github'] { --vc: var(--link); }
-.activitybar button[data-view='chats'] { --vc: var(--claude); }
-.activitybar button[data-view='sessions'] { --vc: var(--ok); }
-.activitybar button[data-view='observe'] { --vc: var(--err); }
-.activitybar button[data-view='deploy'] { --vc: var(--agent); }
-.activitybar button[data-view='mcp'] { --vc: var(--accent); }
+.activitybar button[data-view] { opacity: 0.7; }
+.activitybar button[data-view]:hover, .activitybar button[data-view].active { opacity: 1; }
 .activitybar .codicon.icon { font-size: 24px; }
 .activitybar .badge { position: absolute; right: 8px; bottom: 8px; }
 .badge {
@@ -174,7 +166,7 @@ pre.wrap { white-space: pre-wrap; word-break: break-word; font-family: inherit; 
 .status-card .ghost { margin-top: 6px; padding-left: 0; }
 .card {
   background: var(--bg-raised); border: 1px solid var(--border); border-left: 3px solid var(--warn); border-radius: var(--radius);
-  padding: 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow-sm);
+  padding: 12px; display: flex; flex-direction: column; gap: 8px;
 }
 .card.permission { border-left-color: var(--accent); }
 .card .label { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.04em; color: var(--fg-muted); font-weight: 600; }
@@ -300,7 +292,7 @@ button.send:disabled { opacity: 0.35; cursor: default; }
   grid-template-columns: auto 1fr; gap: 4px 12px;
 }
 .dialog-icon .codicon { font-size: 28px; color: var(--warn); }
-.dialog-title { font-family: var(--serif); color: var(--fg); font-size: var(--text-md); font-weight: 600; margin-bottom: 4px; }
+.dialog-title { color: var(--fg); font-size: var(--text-md); font-weight: 600; margin-bottom: 4px; }
 .dialog-detail { color: var(--fg-muted); overflow-wrap: anywhere; }
 .dialog-warning { color: var(--fg-muted); font-size: var(--text-sm); margin-top: 6px; }
 .dialog-icon.neutral .codicon { color: var(--accent); }
@@ -437,7 +429,7 @@ button.link:hover { background: transparent; text-decoration: underline; }
 .tl-now .icon-btn { width: 20px; height: 20px; }
 .tl-thumbs { grid-column: 2; display: flex; gap: 6px; padding: 4px 0 2px; }
 .tl-thumbs:empty { display: none; }
-.tl-thumbs button { padding: 0; height: 64px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); box-shadow: var(--shadow-sm); overflow: hidden; cursor: pointer; }
+.tl-thumbs button { padding: 0; height: 64px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); overflow: hidden; cursor: pointer; }
 .tl-thumbs img { display: block; height: 100%; width: auto; max-width: 120px; object-fit: contain; }
 .tl-foot { position: sticky; bottom: 0; z-index: 2; background: var(--brief-bg); padding: 2px 0 10px; }
 .tl-now {
@@ -515,7 +507,7 @@ button.send { width: auto; padding: 0 8px; gap: 4px; font-size: var(--text-sm); 
 .tabs .spacer { flex: 1; }
 .tabs .focus-btn { align-self: center; flex: none; margin-right: 6px; }
 .editor-group { position: relative; }
-.focus-pill { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 5; display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-raised); box-shadow: var(--shadow-sm); font-size: var(--text-sm); color: var(--fg-muted); }
+.focus-pill { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 5; display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-raised); font-size: var(--text-sm); color: var(--fg-muted); }
 .focus-pill .sep { opacity: 0.5; }
 @media (min-width: 901px) {
   .workbench[data-focus='true'] .activitybar,

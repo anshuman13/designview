@@ -7,7 +7,6 @@ type Today = { today: { costUsd: number; tokens: number }; budgetUsd: number };
 const PHASES = ['plan', 'sketch', 'design', 'review', 'system', 'chat'];
 const money = (n: number) => `$${n.toFixed(2)}`;
 const tok = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
-const modelName = (m: string) => (/opus/i.test(m) ? 'Opus' : /sonnet/i.test(m) ? 'Sonnet' : /haiku/i.test(m) ? 'Haiku' : m);
 
 function Rows({ rows }: { rows: [string, { tokens: number; costUsd: number }][] }) {
   return (
@@ -42,7 +41,6 @@ export function SpendPill() {
   const ratio = day && day.budgetUsd > 0 ? day.today.costUsd / day.budgetUsd : 0;
   const level = ratio > 1 ? 'err' : ratio > 0.8 ? 'warn' : '';
   const phases = PHASES.map((p) => [p, spend.byPhase[p]] as const).filter(([, v]) => v && (v.tokens || v.costUsd)) as [string, { tokens: number; costUsd: number }][];
-  const models = Object.entries(spend.byModel).map(([m, v]) => [modelName(m), v] as [string, { tokens: number; costUsd: number }]);
 
   return (
     <span className="spend">
@@ -55,8 +53,6 @@ export function SpendPill() {
           <div className="spend-pop">
             <div className="spend-head">This chat <span className="muted">{tok(spend.tokens)} tok · {money(spend.costUsd)}</span></div>
             {phases.length ? <Rows rows={phases} /> : <div className="muted small">Nothing spent yet</div>}
-            {models.length > 0 && <div className="spend-head">By model</div>}
-            <Rows rows={models} />
             {day && (
               <>
                 <div className="spend-head">Today, all chats <span className="muted">{tok(day.today.tokens)} tok · {money(day.today.costUsd)}</span></div>
@@ -68,7 +64,6 @@ export function SpendPill() {
                 )}
               </>
             )}
-            <div className="spend-tip muted small">Opus plans, Sonnet does the rest. The Check preset reviews for free.</div>
           </div>
         </>
       )}

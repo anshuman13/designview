@@ -113,7 +113,7 @@ export function BuildCheck() {
           </select>
         )}
       </div>
-      {!run && <Empty art={<ReviewArt />} title="Check the build against the design" text="Paste a staging or localhost URL. DesignView screenshots it at the frame's width and lists what differs from Figma. One Sonnet call." />}
+      {!run && <Empty art={<ReviewArt />} title="Check the build against the design" text="Paste a staging or localhost URL. DesignView screenshots it at the frame's width and lists what differs from Figma." />}
       {run && (
         <>
           <div className="bc-head">

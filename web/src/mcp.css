@@ -70,7 +70,7 @@
   background: var(--bg-raised); border-left: 1px solid var(--border);
 }
 .mcp-detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.mcp-detail-head h2 { font-family: var(--serif); margin: 0; font-size: var(--text-lg); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.mcp-detail-head h2 { margin: 0; font-size: var(--text-lg); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .mcp-detail-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
 .mcp-detail-acts button, .mcp-detail-acts a {
   height: 26px; padding: 0 10px; display: inline-flex; align-items: center; gap: 5px; font-size: var(--text-sm); text-decoration: none;
