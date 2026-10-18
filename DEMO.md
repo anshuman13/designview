@@ -1,306 +1,170 @@
 # DesignView demo guide
 
-Built overnight on 2026-10-17. Each section is one change you can try. Open http://localhost:5174 on the Mac, or
-http://<tailscale-ip>:5174 on your phone (Tailscale) and add it to the home screen for the app.
+Open http://localhost:5174 on the Mac, or scan the phone icon's QR code to open it on your phone and add it to the home
+screen. DesignView.app runs from the menu bar (started by `./start.sh`). This guide shows the app after the redesign.
+
+Nothing in the tour spends tokens. Do not send anything while you follow it.
 
-DesignView.app runs from the menu bar (started by `./start.sh`). `caffeinate` keeps the Mac awake until about 11:00.
+## Ten-minute tour
+
+1. **Open the app.** Go to the URL.
+   You should see: The top bar, the left rail and the conversation. With no file and no content, the canvas column is
+   hidden and the conversation fills the window. If the Figma token or tools are missing, a one-line "Figma is not
+   connected yet" banner shows.
+
+2. **Chats and the Sample tour.** In the Chats panel, click the pinned "Sample tour" row.
+   You should see: The read-only chat "Grocery app (sample)". The Figma, Sketch and Review tabs appear above the canvas.
+
+3. **The review card.** At the top of the sample conversation, find the review card.
+   You should see: The card shows the run ("Review 1 · Full"), blocking and major counts, tokens, a pass or fail mark
+   per area, and the buttons Open Review and Post as Figma comments (do not click it). Review deeper appears only after
+   a Quick review or an audit. In a chat with history, each reply has an "n steps" row that expands into the tool calls.
+
+4. **Review tab.** Open Review. Click the Crit row, then the Copy row.
+   You should see: One list, newest first, one line per run (kind, time, counts, tokens). The newest is open. Crit
+   shows four viewpoints. Copy shows suggested text changes, each with an edit field and a tick.
 
-No step below spends tokens unless it says so.
+5. **Sketch tab.** Open Sketch.
+   You should see: Low-fidelity directions per screen on an Excalidraw canvas. You can draw and add notes here.
 
-## 1. Look and feel
+6. **File panel.** Click File in the left rail. Open and close Comments and Versions.
+   You should see: The frames list, then the two collapsible sections. They remember whether they are open.
 
-Claude's cream paper background and coral accent, with Figma blue kept for Figma things (focused frames, the
-Figma tab). Headings, the brief and dialog titles use the system serif (New York). New coral app icon for the home
-screen.
+7. **Design system panel.** Click the design system icon. Open "Export tokens". Scroll to Rules and open it.
+   You should see: Colors, text styles, spacing and components. Export offers CSS, Tailwind and W3C JSON. Rules lists
+   house rules for "This file" and "All files".
 
-Try: open the app, then Settings and the new chat dialog. On the phone, add to home screen and check the icon.
+8. **Mode pill and Shift+Tab.** Click the pill at the left of the composer, pick Design, then open the menu again.
+   Press Shift+Tab in the composer until you are back on Chat.
+   You should see: The menu lists Chat, Design and Review. In Design, "Stop after sketch" and "Review depth" (Quick or
+   Full) appear and the composer gets a coral ring.
 
-## 2. Home and recipes
+9. **Attach popover and link chip.** In Chats, click New chat. Click "Attach Figma file" in the top bar (or press
+   Cmd+O), then close it. Paste a figma.com design link in the composer. Clear the text. Do not click Attach.
+   You should see: The popover has a link field and a Recent files list. The chip "Attach <name>?" has an Attach button.
 
-A Home tab opens first in a new chat. It greets you, shows a setup checklist (Figma token, Figma tools in Claude,
-Chrome, design system profile) with a button for each missing step, and lists recipes in three groups (fifteen now, see section 17):
+10. **Slash commands.** Type `/`. Then type `/sta` and press Tab. Clear the text.
+   You should see: The six recipes first, then the server commands. Tab expands the recipe into its full prompt.
 
-- Make: Design from a brief, Sketch directions, Screenshot to design, Flow map
-- Improve: Missing states, Responsive variants, Copy pass, Design crit, Audit
-- Ship: Handoff notes, Address comments
+11. **Settings and Check setup.** Click the gear. Click "Run all checks" in Check setup. Press Escape.
+   You should see: Settings opens as an overlay. Check setup tests the Figma token, Figma tools, Chrome and the Claude
+   login, and says ok or what is wrong, with a fix button where one exists.
 
-Clicking a recipe fills the composer with a written prompt and does not send it, so you can edit it first. If a
-frame is focused in Files, the prompt names it. Every recipe is also in the command palette (Cmd+K) as "Recipe: ...".
+12. **Phone QR.** Click the phone icon in the top bar. Scan the code with your phone camera.
+   You should see: A QR code with a switch between the Tailscale and Wi-Fi addresses, and how to add the app to the
+   home screen.
 
-Try: click "Missing states" and read the prompt in the composer. Delete it without sending.
+Also worth a look: press `?` for the shortcut sheet, and press Cmd+Shift+P for the command palette.
 
-## 3. Empty states
-
-Sketch, Review, Design system and Files each show a small line drawing, one sentence on what the tab is for and one
-button that puts the right command (/sketch, /review, /system) in the composer.
-
-Try: the Files sidebar in a chat with no Figma file.
-
-## 4. Spend meter
-
-A pill in the top bar shows what the chat has cost. Click it for a breakdown by phase (plan, sketch, design, review,
-design system, chat) and by model, today's total across all chats, and a budget bar. Set a daily budget in Settings;
-the pill turns amber at 80% and red past 100%. Background reviewers and profile builds count too.
-
-Try: click the "0 tok" pill. Set a budget of 5 in Settings and open it again.
-
-Note: per-chat spend resets when the server restarts; the daily total is kept in ~/.designview/spend.json.
-
-## 5. Design crit and copy pass
-
-The Review tab has three views: Review, Crit and Copy. Both new ones are a single Sonnet call (a few cents) and never
-edit Figma.
-
-- **Crit** (`/crit`): four viewpoints on the frames (new user, power user, accessibility, product), each with a
-  verdict and likes, concerns and ideas linked to nodes.
-- **Copy** (`/copy tone:friendly`): suggested text changes with a reason each. Edit any "after", untick what you
-  don't want, then "Apply selected in Figma" puts a precise use_figma prompt in the composer for you to send.
-
-Try: Review tab, switch to Crit and Copy. The runs shown are sample data in ~/DesignView/scratch.
-
-## 6. Comments inbox
-
-A Comments panel in the left bar lists the Figma file's comment threads, open first. Each has Show in Figma, Reply
-and Ask Claude (fills the composer with the comment and asks Claude to fix it and reply). "Ask Claude to address all
-open comments" does the whole list. Figma's API cannot resolve comments, so Claude replies instead.
-
-Try: needs a chat on a Figma file and a token in Settings.
-
-## 7. Token export and brief templates
-
-- Design system panel: "Export tokens" turns the profile into CSS variables, a Tailwind theme or W3C design tokens
-  JSON, with Copy and Download.
-- New chat dialog: brief templates (feature screen, landing page, onboarding, settings, dashboard, empty and error
-  states). The brief lands in the new chat's composer, not sent.
-
-Try: the file switcher at the top left, pick "Onboarding flow".
-
-## 8. Changes: before and after
-
-Review tab, Changes view. Lists the file's Figma versions, with Claude's checkpoints marked. Pick a version and a
-frame to compare it with now, either with a slider you drag or side by side. Links to the version in Figma.
-
-Try: needs a chat on a Figma file and a token.
-
-## 9. Images in the composer
-
-Paste, drop or attach up to five images (screenshots, references, moodboards). They are saved to refs/ in the chat
-folder and sent to Claude with the message. Pairs with the "Screenshot to design" recipe.
-
-Try: paste a screenshot into the composer and remove it with the x. Do not send unless you want a run.
-
-## 10. House rules
-
-A Rules panel in the left bar with "This file" and "All files" rule lists, such as "no drop shadows on cards".
-Claude gets them in every chat, and the reviewers and crit check against them. "Suggest rules from my design
-system" asks Claude to propose some.
-
-Try: add a rule, click away, see "Saved".
-
-## 11. Shortcuts
-
-Press ? for the sheet. Cmd+1 to Cmd+6 switch tabs (Chrome may keep Cmd+digit, then use Ctrl), / focuses the
-composer. Node ids in crit, copy and review show as Figma-blue chips.
-
-## 12. Sample tour (start here)
-
-Home has "Take the tour with sample data". It opens a read-only chat, "Grocery app (sample)", with a finished brief,
-sketches, a full review, a crit, a copy pass and a design system profile. It never calls Claude or Figma: sending a
-message there only shows a note.
-
-Try: Home, Open sample. Then walk Sketch, Review (Review, Crit, Copy), the Design system panel (Export tokens).
-
-## 13. Design report
-
-Review tab, "Export report" (or the download icon, or "Export: Design report" in the palette). One self-contained
-HTML file with the brief, sketches, frames, review, crit and copy changes. No external requests, prints cleanly.
-
-Try: in the sample chat, Review, Export report.
-
-## 14. Your recipes
-
-Home has a "Yours" group. "New recipe" saves your own prompt (use {frames} for the focused frame), with edit and
-delete. Palette: "Recipe: Save composer text as recipe" turns what you typed into a recipe.
-
-Try: make a recipe "Dark mode pass" and click it.
-
-## 15. Timeline thumbnails and focus mode
-
-- When Claude reports progress on Figma nodes, the timeline shows small thumbnails of them. Click one to jump there
-  in Figma.
-- Focus mode (Cmd+. or the icon at the right of the tab strip) hides both side panels so Figma, Sketch or Review get
-  the full width. A floating pill shows the phase and lets you exit.
-
-## 16. Security fixes from a review of tonight's code
-
-- The server now rejects POSTs and WebSockets from other websites (Origin and Host checks; localhost, LAN,
-  Tailscale and Netbird stay allowed). Before, any page you visited could write house rules or settings. This was
-  inherited from AgentView, so AgentView has the same gap.
-- The report embeds sketches as images and sends a strict CSP, so a sketch cannot run script.
-- Uploads are checked by their bytes, request bodies are capped at 1 MB, rules at 20 KB.
-- The sample chat is read-only on every path (steer, plan changes, commands), not only new messages.
-- Edited house rules now reach open chats on the next message.
-
-## 17. More recipes and the build check
-
-New recipes: Accessibility notes (focus order, headings, labels as annotations next to the frames), Localization
-stress test (copies with 40% longer text, then lists what breaks), Dark mode pass (dark copies via variable modes),
-Frame to code (React and CSS using your tokens, saved to the chat folder), Build check.
-
-Build check (`/buildcheck <url> <frame link>`, Review tab, Build view): DesignView opens the URL in a hidden Chrome
-tab at the frame's width, takes a full-page screenshot, renders the Figma frame, and one Sonnet call lists the
-differences with a match score. Slider or side by side, and "Send diffs to engineer" copies a markdown checklist.
-Not tried against a real page yet, since it needs a Figma file and spends a few cents.
-
-README.md is rewritten to cover all of this.
-
-## 18. Small things
-
-- The timeline in a new chat asks "What are we designing?" and offers four example briefs as chips.
-- Three variations recipe: three alternatives of a frame in a row, each with a caption, plus Claude's pick.
-- The Figma and Preview tabs use the same empty state style as the rest, with "Open this file" and "Build a
-  prototype" buttons.
-- A chat's spend now survives a server restart (stored per session in spend.json in the chat folder).
-- Phone: the Review switcher scrolls sideways, and Export report is the download icon only.
-
-## 19. Check setup
-
-Settings has a "Check setup" card. It tests the Figma token, Figma tools in Claude, Chrome and the Claude CLI login,
-without spending model tokens. Each row says ok or what is wrong, with a fix button where one exists (for example
-"Add Figma to Claude").
-
-Try: Settings, Run all checks.
-
-## 20. Open on phone
-
-The phone icon in the top bar shows a QR code for the Tailscale or Wi-Fi address, with a switch between them, and
-how to add DesignView to the home screen. The Android app tab from AgentView is gone (DesignView has no Android
-build).
-
-Try: click the phone icon and scan the code with your phone camera.
-
-## 21. Recipe search
-
-Home has a search box above the recipes. It filters every group, your own recipes included, by title and
-description. Escape clears it.
-
-Try: Home, type "frame" or "copy".
-
-## 22. Modes: Chat, Design, Review
-
-A plain message is now a normal chat with Claude. The pill at the left of the composer picks the mode:
-Chat (default), Design (Opus plans, then sketch, design and review) or Review (reviewers check the frames,
-no edits). Shift+Tab in the composer cycles modes. Design mode has a coral ring and its options (stop
-after sketch, review depth) live in the pill menu.
-
-Try: click the Chat pill, pick Design, open the menu again to see the options. Shift+Tab back to Chat.
-
-## 23. Attach a Figma file
-
-A chat no longer needs a Figma link to start. New chat opens an empty chat right away. Attach a file later
-from the top bar pill ("Attach Figma file": paste a link or pick a recent file), or paste a figma.com link
-in the composer and click Attach on the chip that appears. Claude gets the file on its next turn. ⌘O opens
-the same popover.
-
-Try: Chats, New chat. Click "Attach Figma file" in the top bar. Paste a Figma link in the composer to see
-the chip (no need to send).
-
-## 24. Run card
-
-The Plan / Sketch / Design / Review stepper at the top of the right panel is gone. While a design or sketch
-run is going, a card at the end of the conversation shows each phase (done, now, still to come), tokens
-used so far, and a Stop button. While Claude waits for you to pick sketch directions, the button is Open
-Sketch instead.
-
-Try: switch the composer to Design and send a brief; the card appears below your message.
-
-## 25. One conversation view
-
-The Timeline and Transcript tabs are merged. Each turn shows your message, Claude's progress lines (with
-Figma frame thumbnails), important notes, Fable reviews, and Claude's full reply. All tool calls of a turn
-sit in one collapsed "n steps" row with the total time; click it to see every step. While Claude works,
-that row shows the current step. Read aloud moved into the status line.
-
-Try: open any chat with history and click "n steps" above a reply.
-
-## 26. No more Home tab
-
-Home (greeting, setup list, recipe grid) is gone. A new chat now opens to a short welcome with four
-suggestions, and a one-line "Figma is not connected yet" banner when the token or Figma tools are
-missing. The sample tour is the "Sample tour" row at the top of Chats. Custom recipes are in the command
-palette (run or "Recipe: Edit ..."). Chats without a file are grouped under "No file yet".
-
-Try: Chats, click Sample tour. Press ⌘K and type "recipe".
-
-## 27. Tabs only when there is something to show
-
-The Figma, Sketch and Review tabs appear only when the chat has a file, sketches or a review. With
-nothing to show, the canvas column is hidden and the conversation fills the window at a readable width.
-Opening a page from the palette or ⌘1..5 brings its tab back. Preview and Files are dev-tools only.
-Settings (gear) opens as an overlay; Escape closes it.
-
-Try: New chat shows only the conversation. Open the Sample tour to see Figma, Sketch and Review tabs.
-
-## 28. Six recipes as slash commands
-
-The recipe catalog is down to six: /brief (switches to Design mode), /states, /responsive, /crit, /copy
-and /handoff. Type / in the composer to see them first in the list; Tab or Enter expands the recipe into
-its full prompt, filled with the frame selected in Files. Your own recipes show up as /their-name too, and
-stay editable from the palette.
-
-Try: type /sta and press Tab. Clear the text afterwards.
-
-## 29. Review as one list
-
-The Review tab no longer has Review / Crit / Copy / Changes / Build sub-tabs. It is one list of every
-review, audit, crit and copy pass, newest first, one line each (kind, time, counts, tokens). The newest is
-open; click any row to expand it. The header is a Review button (puts /review in the composer) and Quick |
-Full. Check and Focused presets are gone. Changes moved to a "Changes" section in the Files panel; Build
-check shows at the bottom of Review only with dev tools on. The sample tour's runs now show as minutes ago.
-
-Try: Sample tour, Review tab, click Crit and Copy rows.
-
-## 30. Review card in the conversation
-
-When a review or audit finishes, a card appears in the conversation: the run (e.g. "Review 1 · Full"),
-blocking and major counts, tokens, a pass or fail mark per area, and buttons for Open Review, Post as
-Figma comments, and Review deeper (puts /review full in the composer, shown after a Quick review or audit).
-Cards come back when you reopen a chat. The sample tour shows one.
-
-Try: Chats, Sample tour; the card is at the top of the conversation.
-
-## 31. Free check after Claude edits Figma
-
-In Chat mode, when a turn used use_figma, DesignView runs the free design system check (no model tokens)
-on the frames Claude touched, or on all top-level frames if it cannot tell which, and posts the review card
-in the conversation. The status line shows "Checking edited frames" meanwhile. Turn it off in Settings,
-Design runs: "Check frames against the design system after Claude edits Figma".
-
-Try: attach a real file, ask Claude in Chat mode to change a frame; a review card follows the reply.
-
-## 32. Three panels on the left
-
-The left rail has three panels: Chats (opens by default), File and Design system. File holds the frames
-list with collapsible Comments and Versions sections. Design system holds the profile with your Rules in a
-collapsible section at the bottom. Sections remember whether they are open. "View: Show File Comments" and
-"View: Show Design System Rules" in the palette jump straight to them.
-
-Try: Sample tour, then the File icon, open Comments; then the palette icon for the design system.
-
-## 33. Theme pass
-
-One type scale (16 body, 14 secondary, 13 labels). Serif only for the wordmark, page titles and headings
-in Claude's replies. No model names in the UI apart from one line in Settings. No shadows except on
-popovers, menus and dialogs; cards inside panels use a tint instead of a second border. The top bar status
-shows only on narrow screens, where the conversation status line is hidden. Token counts appear only in the
-spend pill, the run card and review cards. Rail icons are no longer colored per panel.
-
-Try: compare the Review tab and Settings with the screenshots in earlier sections.
+## If something looks different
+
+- No Figma, Sketch or Review tab: the chat has no file, sketches or review yet. Open the Sample tour, or press Cmd+1 to
+  Cmd+3 to bring a tab back.
+- No Preview or Files tab, terminal or build check: turn on "Developer tools" in Settings.
+- Cmd+digit does nothing: Chrome keeps some of them, so use Ctrl+digit.
+- The top bar status is hidden on wide screens. The conversation status line shows it there.
+
+## What changed in the redesign
+
+- R1, Modes: a plain message is a normal chat. The composer pill picks Chat, Design or Review, and Shift+Tab cycles.
+- R2, Attach a Figma file: a chat starts without a file. Attach from the top bar, Cmd+O, or the composer link chip.
+- R3, Run card: the Plan, Sketch, Design, Review stepper is replaced by a card in the conversation with Stop.
+- R4, One conversation view: Timeline and Transcript are merged, with an "n steps" row per reply.
+- R5, No Home tab: a short welcome with four suggestions, a setup banner and the sample tour row in Chats.
+- R6, Tabs only with content: Figma, Sketch and Review show when they have something. Settings is an overlay.
+- R7, Six recipes as slash commands: `/brief`, `/states`, `/responsive`, `/crit`, `/copy`, `/handoff`.
+- R8, Review as one list: no Review, Crit, Copy, Changes and Build sub-tabs, and no Check or Focused presets.
+- R9, Review card in the conversation: counts, area marks, Open Review, Post as Figma comments, Review deeper.
+- R10, Free check after edits: in Chat mode, a turn that edited Figma gets the design system check on its frames.
+- R11, Three left panels: Chats, File (Comments and Versions inside) and Design system (Rules inside).
+- R12, Theme pass: one type scale, serif only for titles, no model names in the UI, no shadows except popovers.
+- R13, Cuts: the FlowBar, the New chat dialog and brief templates, the focus pill, the Preview tab, and ten recipes.
+
+## Feature reference
+
+**Look and feel.** Cream paper background and coral accent, with Figma blue for Figma things (node chips, focused
+frames, the Figma tab). Type is 16 body, 14 secondary and 13 labels. The system serif (New York) is used for the
+wordmark, page titles and headings in Claude's replies. The home screen icon is coral.
+
+**Modes.** Chat is a normal conversation with Sonnet. Design runs plan (Opus), sketch, design and review. Review checks
+frames and edits nothing. Design options (stop after sketch, review depth) are in the pill menu. Settings also has
+"Stop after sketch" and a default review depth.
+
+**Design run.** Plan writes a brief. Sketch draws two or three directions per screen. Design builds the screens on a
+page named DesignView with your library components, variables and text styles. Review runs the free design system
+check, then reviewers by depth: Quick is one reviewer, Full is six area reviewers with up to two fix rounds. Before
+its first change in each turn, Claude saves a Figma version, and a hook blocks changes until it has.
+
+**Attach and Figma access.** The Figma token gives file lists, frames, thumbnails, comments and the design system
+check. "Add Figma to Claude" in Settings adds the Figma MCP server. The Figma tab shows your own Chrome through the
+relay on :7780. Check setup tests the token, tools, Chrome and Claude login without spending tokens.
+
+**Conversation.** Each turn shows progress lines with frame thumbnails (click one to jump to it in Figma), notes and
+the reply. Read aloud is in the status line. You can paste, drop or attach up to five images in the composer. They are
+saved to `refs/` in the chat folder and sent with the message.
+
+**Review, crit and copy.** `/review` runs reviewers and the free check. `/audit` checks the whole file with no model
+calls. `/crit` gives four viewpoints with a verdict and notes. `/copy tone:friendly` suggests text changes, and
+"Apply selected in Figma" puts a precise prompt in the composer. Crit and copy are one Sonnet call each (a few cents)
+and never edit Figma. The Review tab can post findings as Figma comments.
+
+**Build check.** With developer tools on, `/buildcheck <url> <frame link>` opens the URL in a hidden Chrome tab at the
+frame's width, screenshots it, renders the Figma frame, and one Sonnet call lists the differences with a match score.
+View by slider or side by side. "Send diffs to engineer" copies a markdown checklist.
+
+**File panel.** Frames (select one to target recipes), Comments with Show in Figma, Reply and Ask Claude ("Ask Claude
+to address all open comments" does the list, since Figma's API cannot resolve comments), and Versions with Claude's
+checkpoints marked and a compare view.
+
+**Design system and Rules.** The profile can be rebuilt with `/system`. "Export tokens" gives CSS variables, a
+Tailwind theme or W3C JSON. Rules for "This file" and "All files" reach every chat on the next message, and the
+reviewers and crit check against them. "Suggest rules from my design system" proposes some.
+
+**Recipes.** Six built-in recipes expand from `/`. Your own recipes show as `/<title>`, and you manage them in the
+palette ("Recipe: Save composer text as recipe", "Recipe: Edit ...").
+
+**Spend meter.** The pill shows chat cost by phase and model, today's total, and a budget bar. The daily budget is in
+Settings. Background reviewers and profile builds count. Chat spend survives a server restart.
+
+**Design report.** Review tab, "Export report" (or the palette). One self-contained HTML file with the brief, sketches,
+frames, review, crit and copy changes. No external requests, prints cleanly.
+
+**Shortcuts and focus mode.** Press `?` for the sheet. Cmd+1 to Cmd+5 open Figma, Sketch, Review, Preview and
+Settings (Ctrl if Chrome keeps the digits). Cmd+B toggles the sidebar and Cmd+. toggles focus mode, which hides both
+side panels. Node ids show as Figma-blue chips.
+
+**Sample tour.** Read-only chat with a finished brief, sketches, a full review, a crit, a copy pass, a review card and
+a design system profile. It never calls Claude or Figma.
+
+**Phone.** The phone icon shows a QR code for the Tailscale or Wi-Fi address and how to add the app to the home screen.
+Everything except the Figma tab works on the phone.
+
+**Security.** The server rejects POSTs and WebSockets from other websites (Origin and Host checks; localhost, LAN,
+Tailscale and Netbird stay allowed). Before this fix, any page you visited could write house rules or settings. The
+report embeds sketches as images and sends a strict CSP. Uploads are checked by their bytes, request bodies are capped
+at 1 MB and rules at 20 KB. The sample chat is read-only on every path.
+
+## After the tour: real runs
+
+These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.
+
+1. **Attach a file.** Click "Attach Figma file", paste a link, send a plain question such as "What frames are on this
+   page?". You should see a normal reply with an "n steps" row.
+2. **Free check after an edit.** In Chat mode, ask Claude to change one frame. When the reply ends, the status line shows
+   "Checking edited frames" and a review card follows. This check uses no model tokens.
+3. **Review mode.** Switch to Review with Shift+Tab, name a frame and send. Reviewers run and a review card appears.
+   Click Review deeper to put `/review full` in the composer.
+4. **Design mode.** Switch to Design, send a short brief. The run card shows plan, sketch, design and review. Turn on
+   "Stop after sketch" first if you want to pick a direction before Claude touches Figma.
+5. **Crit and copy.** Type `/crit` or `/copy tone:friendly` with a frame link. Each is one Sonnet call, a few cents.
+6. **Spend.** Click the spend pill to see the cost by phase and model.
 
 ## Open questions for you
 
-- "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a
-  full run. Turn it off by default?
-- AgentView has the same cross-site request gap that section 16 fixed here. Port the fix there?
-- Not tried with real Figma and Claude yet: comments inbox, crit, copy pass, Changes, build check, image paste.
-  They need a Figma token and spend a few cents each.
+- AgentView has the same cross-site request gap that DesignView fixed (Origin and Host checks). Port the fix there?
+- Not tried with real Figma and Claude yet. These need a Figma token and spend a few cents each:
+  - Comments inbox, crit, copy pass, Versions compare, build check and image paste.
+  - The attach flow with a real file (top bar, link chip, Cmd+O).
+  - The free check after Claude edits Figma in Chat mode.
+  - The review card after a real review.
+  - Design mode end to end, with the run card.
