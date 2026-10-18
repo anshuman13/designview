@@ -115,3 +115,9 @@
 .tr-review-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .tr-review-stale { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; color: var(--fg-muted); }
 .tr-review-note { color: var(--fg-faint); }
+
+.frame-chip {
+  display: inline; padding: 1px 6px; border: 0; border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--fg);
+  font: inherit; cursor: pointer; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: baseline;
+}
+.tr-review-frames { color: var(--fg-muted); font-size: var(--text-sm); margin: 2px 0 6px; }

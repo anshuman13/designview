@@ -210,6 +210,10 @@ reason). Both work on the sample tour's crit and copy runs.
 shows "Open <name> in its own chat?". Open switches to that file's chat (it reuses one if it exists) and moves the
 typed text there. Untested with a real second file so far.
 
+**Frame names in the chat.** Figma frame links in your messages show as a chip with the frame's name; click it to
+open the frame. Review cards list the reviewed frames by name under the title (three, then "+n more"). Names come from
+one outline request shared by the whole page and refreshed at most once a minute; without it, ids show instead.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.

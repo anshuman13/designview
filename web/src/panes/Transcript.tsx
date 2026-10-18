@@ -6,6 +6,7 @@ import { Markdown } from './Chat';
 import { FileIcon } from './Explorer';
 import { insertPrompt, showNode } from './Files';
 import { useThumbs } from '../useThumbs';
+import { frameName, splitFrameLinks, useOutline } from '../outline';
 import { buildTranscript, duration, firstLine, groupTurns, relPath, stepLabel, type Block, type Item, type ToolResult, type ToolUse } from './steps';
 import { focusReview } from './reviewFocus';
 import { areaRows, canGoDeeper, isStale, runLabel, summarize, unposted } from './reviewRuns';
@@ -121,7 +122,7 @@ function Steps({ b, cwd, thumb, live }: { b: Extract<Block, { kind: 'steps' }>; 
 function Row({ it, cwd, thumb }: { it: Item; cwd: string; thumb: (id: string) => string | null }) {
   switch (it.kind) {
     case 'user':
-      return <div className={`tr-user ${it.stopping ? 'stopping' : ''}`}>{it.text}{it.stopping && <span className="tr-stop"><Icon name="loading" small spin /></span>}</div>;
+      return <div className={`tr-user ${it.stopping ? 'stopping' : ''}`}><UserText text={it.text} />{it.stopping && <span className="tr-stop"><Icon name="loading" small spin /></span>}</div>;
     case 'phase':
       return <div className="tr-phase"><Icon name="sync" small />{it.text}</div>;
     case 'assistant':
@@ -153,6 +154,11 @@ function Row({ it, cwd, thumb }: { it: Item; cwd: string; thumb: (id: string) =>
     case 'note':
       return <div className="tr-note tr-act"><span className="tr-mark"><i className="tr-dot" /></span><span className="tr-text" title={it.text}>{it.text}</span></div>;
   }
+}
+
+function UserText({ text }: { text: string }) {
+  const outline = useOutline(useStore((s) => s.session.figma?.key));
+  return <>{splitFrameLinks(text).map((p, i) => typeof p === 'string' ? p : <button key={i} className="frame-chip" title={p.url} onClick={() => showNode(p.id)}>{frameName(outline, p.id) ?? p.id}</button>)}</>;
 }
 
 function Step({ use, result, cwd }: { use: ToolUse; result?: ToolResult; cwd: string }) {
@@ -215,25 +221,6 @@ function AgentRow({ use, result }: { use: ToolUse; result?: ToolResult }) {
   );
 }
 
-const lastModifiedCache = new Map<string, { value: string; at: number }>();
-
-function useLastModified(key: string | undefined) {
-  const rev = useRev('review.json');
-  const [value, setValue] = useState<string | null>(null);
-  useEffect(() => {
-    if (!key || key === 'sample') return setValue(null);
-    const hit = lastModifiedCache.get(key);
-    if (hit && Date.now() - hit.at < 60_000) return setValue(hit.value);
-    let live = true;
-    getJson<{ lastModified: string }>('/api/figma/outline').then((o) => {
-      lastModifiedCache.set(key, { value: o.lastModified, at: Date.now() });
-      if (live) setValue(o.lastModified);
-    }).catch(() => {});
-    return () => { live = false; };
-  }, [key, rev]);
-  return key && key !== 'sample' ? value : null;
-}
-
 function ReviewCard({ runAt }: { runAt: number }) {
   const chat = useStore((s) => s.session.id);
   const hasFile = useStore((s) => !!s.session.figma);
@@ -245,7 +232,8 @@ function ReviewCard({ runAt }: { runAt: number }) {
   const [note, setNote] = useState('');
   useEffect(() => { getJson<ReviewDoc>('/api/review').then(setDoc).catch(() => {}); }, [chat, rev]);
   const latestAt = doc?.runs.length ? Math.max(...doc.runs.map((r) => r.at)) : 0;
-  const lastModified = useLastModified(latestAt === runAt ? figmaKey : undefined);
+  const outline = useOutline(figmaKey);
+  const lastModified = latestAt === runAt && figmaKey !== 'sample' ? outline?.lastModified : null;
   const run = doc?.runs.find((r) => r.at === runAt);
   if (!doc || !run) return <div className="tr-system">Review finished</div>;
   const pending = unposted(run, doc);
@@ -274,6 +262,7 @@ function ReviewCard({ runAt }: { runAt: number }) {
         <span className="tr-review-sum">{summarize({ kind: run.kind === 'audit' ? 'audit' : 'review', id: run.id, at: run.at, tokens: run.tokens, run })}</span>
         {run.tokens > 0 && <span className="tr-dur">{Math.round(run.tokens / 1000)}k tokens</span>}
       </div>
+      {run.frames.length > 0 && <div className="tr-review-frames">{run.frames.slice(0, 3).map((id) => frameName(outline, id) ?? id).join(', ')}{run.frames.length > 3 && ` +${run.frames.length - 3} more`}</div>}
       <ul className="tr-review-rows">
         {areaRows(run).map((a) => (
           <li
