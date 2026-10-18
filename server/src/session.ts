@@ -536,6 +536,7 @@ export class AgentSession {
           if (flow.kind === 'sketch') return this.endFlow('done', 'Sketch run finished');
           if (flow.stopAfterSketch && sketch.screens.some((s) => !s.chosen)) {
             this.setFlow({ phase: 'pick' });
+            this.setSession({ running: false });
             this.system('Pick a direction for each screen on the Sketch tab, then press Continue');
             return;
           }

@@ -158,6 +158,10 @@ design system check first, then each area (or "All areas" for Quick), with a spi
 **Attach from Chrome.** The attach popover lists Figma files open in Chrome ("Open in Chrome", newest first, one per
 file) above Recent files. Click one to attach it. It needs the Chrome relay connected.
 
+**Design run without a file.** A design run in a chat with no Figma file pauses before the design phase instead of
+stopping. The run card says "Waiting for a Figma file" and has an "Attach Figma file" button; attaching a file resumes
+the run. Stop ends it.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.
