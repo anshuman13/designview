@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { getJson } from './store';
 
 export type Outline = { name: string; lastModified: string; pages: Array<{ id: string; name: string; frames: Array<{ id: string; name: string; page: string; w?: number; h?: number }> }> };
@@ -14,15 +14,27 @@ export function getOutline(key: string, fresh = false): Promise<Outline> {
   return promise;
 }
 
-export function useOutline(key: string | undefined, rev = 0): Outline | null {
+let version = 0;
+const listeners = new Set<() => void>();
+
+export function refreshOutline(key: string) {
+  const promise = getOutline(key, true);
+  version++;
+  listeners.forEach((l) => l());
+  return promise;
+}
+
+export const useOutlineVersion = () => useSyncExternalStore((l) => (listeners.add(l), () => listeners.delete(l)), () => version, () => version);
+
+export function useOutline(key: string | undefined): Outline | null {
   const [outline, setOutline] = useState<Outline | null>(null);
-  const first = useRef(rev);
+  const v = useOutlineVersion();
   useEffect(() => {
     if (!key) return setOutline(null);
     let live = true;
-    getOutline(key, rev !== first.current).then((o) => live && setOutline(o), () => live && setOutline(null));
+    getOutline(key).then((o) => live && setOutline(o), () => live && setOutline(null));
     return () => { live = false; };
-  }, [key, rev]);
+  }, [key, v]);
   return key ? outline : null;
 }
 

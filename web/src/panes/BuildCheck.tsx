@@ -4,7 +4,7 @@ import { Icon } from '../Icon';
 import { buildChecklist, figmaNodeUrl, type BuildRun, type DesignDoc } from '../../../shared/design';
 import { showNode, insertPrompt } from './Files';
 import { Empty, ReviewArt } from './Empty';
-import { getOutline } from '../outline';
+import { useOutlineVersion, getOutline } from '../outline';
 
 const SEV = { blocking: 'Blocking', major: 'Major', minor: 'Minor' } as const;
 const when = (t: number) => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -65,6 +65,7 @@ function Compare({ run }: { run: BuildRun }) {
 
 export function BuildCheck() {
   const figma = useStore((s) => s.session.figma);
+  const v = useOutlineVersion();
   const chat = useStore((s) => s.session.id);
   const focus = useStore((s) => s.ui.focus);
   const running = useStore((s) => s.session.running);
@@ -89,7 +90,7 @@ export function BuildCheck() {
         setFrame(all.find((f) => f.id === id) ?? null);
       })
       .catch(() => {});
-  }, [figma?.key, chat, focus]);
+  }, [figma?.key, chat, focus, v]);
 
   const run = runs.find((r) => r.id === sel) ?? runs[0];
   const check = () => insertPrompt(`/buildcheck ${url.trim()}${frame && figma ? ` ${frame.name} (${figmaNodeUrl(figma.key, frame.id)})` : ''}`);

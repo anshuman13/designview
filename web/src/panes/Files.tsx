@@ -6,7 +6,7 @@ import { Changes } from './Changes';
 import { Comments } from './Comments';
 import { Section } from '../Section';
 import { figmaNodeUrl } from '../../../shared/design';
-import { getOutline, type Outline } from '../outline';
+import { getOutline, refreshOutline, useOutlineVersion, type Outline } from '../outline';
 
 type Project = { id: string; name: string };
 type FileRow = { key: string; name: string; thumbnail_url: string; last_modified: string };
@@ -22,6 +22,7 @@ export function Files() {
   const [thumbs, setThumbs] = useState<Record<string, string | null>>({});
   const [error, setError] = useState('');
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  const v = useOutlineVersion();
 
   useEffect(() => {
     setOutline(null);
@@ -34,7 +35,7 @@ export function Files() {
         if (ids.length) getJson<Record<string, string | null>>(`/api/figma/thumbs?ids=${encodeURIComponent(ids.join(','))}`).then(setThumbs).catch(() => {});
       })
       .catch((e) => setError(e.message));
-  }, [figma?.key]);
+  }, [figma?.key, v]);
 
   return (
     <div className="side-scroll">
@@ -45,6 +46,7 @@ export function Files() {
               <div className="file-name">{figma.name}</div>
               <div className="file-acts">
                 <button onClick={() => postJson('/api/figma/show', {}).catch((e) => setError(e.message))}><Icon name="link-external" small /> Show in Chrome</button>
+                <button className="icon-btn" title="Reload frames from Figma" aria-label="Reload frames from Figma" onClick={() => void refreshOutline(figma.key).catch(() => {})}><Icon name="refresh" small /></button>
               </div>
             </div>
             {error && <div className="error-text">{error}{/Settings/.test(error) && <> <button className="link" onClick={() => window.dispatchEvent(new CustomEvent('designview:command', { detail: { id: 'page:settings' } }))}>Open Settings</button></>}</div>}

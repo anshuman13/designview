@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { getJson, useStore } from '../store';
 import { ReviewArt, Empty } from './Empty';
 import type { DesignDoc } from '../../../shared/design';
-import { getOutline, type Outline } from '../outline';
+import { useOutlineVersion, getOutline, type Outline } from '../outline';
 
 type Version = { id: string; at: string; label: string; description: string; user: string; checkpoint: boolean };
 type FrameRow = Outline["pages"][number]["frames"][number];
@@ -18,6 +18,7 @@ function ago(iso: string) {
 
 export function Changes() {
   const figma = useStore((s) => s.session.figma);
+  const v = useOutlineVersion();
   const chat = useStore((s) => s.session.id);
   const [versions, setVersions] = useState<Version[] | null>(null);
   const [frames, setFrames] = useState<FrameRow[]>([]);
@@ -42,7 +43,7 @@ export function Changes() {
         setFrameId(list[0]?.id ?? null);
       })
       .catch((e) => setError(e.message));
-  }, [figma?.key, chat]);
+  }, [figma?.key, chat, v]);
 
   if (!figma || /access token/i.test(error)) return <Empty art={<ReviewArt />} title="No versions to compare" text={EMPTY} />;
   const version = versions?.find((v) => v.id === versionId);

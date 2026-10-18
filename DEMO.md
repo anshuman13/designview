@@ -222,7 +222,8 @@ app instead of a new browser tab.
 
 **One outline request.** The Files panel, `#` frames, recipes, review cards, Changes and Build check share one cached
 copy of the file outline, so a page makes at most one Figma outline call per file per minute. A frame Claude just added
-can take up to a minute to show in those lists.
+can take up to a minute to show in those lists, or click the refresh button next to Show in Chrome in the File
+panel to reload it everywhere at once.
 
 ## After the tour: real runs
 
