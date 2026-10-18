@@ -56,21 +56,26 @@ A chat does not need a Figma file to start. Attach one when you need it:
 
 - Click "Attach Figma file" in the top bar (or press Cmd+O), paste a link or pick a recent file.
 - Or paste a figma.com link in the composer and click Attach on the chip that appears.
+- In a chat that already has a file, a link to another file offers to open that file in its own chat.
 
-Claude gets the file on its next turn. Chats without a file are grouped under "No file yet" in Chats.
+Claude gets the file on its next turn. Chats without a file are grouped under "No file yet" in Chats. "Search chats"
+filters by file name and chat title, and unsent text stays with its chat when you switch.
 
 ## The conversation
 
 Each turn shows your message, Claude's progress lines (with frame thumbnails), notes and the reply. All tool calls of
-a turn sit in one collapsed "n steps" row with the total time. Click it to see every step.
+a turn sit in one collapsed "n steps" row with the total time. Click it to see every step. Figma frame links, yours
+and Claude's, show as chips with the frame name and open the frame on click.
 
 - **Run card.** In Design mode, a card at the end of the conversation shows each phase (plan, sketch, design,
   review) as done, now or to come, with tokens so far and a Stop button. While Claude waits for your sketch pick,
   the button is Open Sketch.
-- **Review card.** When a review or audit finishes, a card shows blocking and major counts, tokens and a pass or fail
-  mark per area. Buttons: Open Review, Post as Figma comments, and Review deeper (after a Quick review or audit).
+- **Review card.** When a review or audit finishes, a card shows blocking and major counts, tokens, the frames by
+  name and a pass or fail mark per area. Failed areas link to their findings in the Review pane. Buttons: Open
+  Review, Copy as checklist (Markdown), Post as Figma comments, Retry (when a reviewer failed) and Review deeper
+  (after a Quick review or audit). If the file was saved after the newest review, the card offers Check again.
 - **Free check after edits.** In Chat mode, when a turn edited Figma, DesignView runs the design system check on the
-  frames Claude touched and posts a review card. It uses no model tokens. Turn it off in Settings, Design runs.
+  frames Claude touched (a nested layer counts as its top-level frame) and posts a review card. It uses no model tokens. Turn it off in Settings, Design runs.
 
 Before its first change in each turn, Claude saves a Figma version. A hook blocks changes until it has.
 
@@ -87,6 +92,9 @@ which you can edit before sending. If a frame is selected in the File panel, the
 | `/crit` | Four-viewpoint critique, no edits (one Sonnet call) |
 | `/copy` | Suggest clearer, shorter, consistent UI text (one Sonnet call) |
 | `/handoff` | Developer notes with spacing, tokens, props and interactions |
+
+`/copy` also lists `/copy tone:formal` and `/copy tone:neutral`. Type `#` for the attached file's frames (with
+thumbnails, the frames Claude edited first) and `@` for files in the chat folder. Press `?` for all keys.
 
 Your own recipes show as `/<title>`. Save one from the command palette ("Recipe: Save composer text as recipe",
 `{frames}` stands for the selected frame) and change it with "Recipe: Edit ...".
@@ -126,10 +134,11 @@ closes it). The Preview and Files tabs, a terminal and the build check show when
 One list of every review, audit, crit and copy pass, newest first, one line each (kind, time, counts, tokens). The
 newest is open. Click a row to expand it. The Review button puts `/review` in the composer, next to Quick and Full.
 
-- Review and audit rows show findings per area, tokens per reviewer and Post as Figma comments.
-- Crit rows show four viewpoints (new user, power user, accessibility, product) with a verdict and linked notes.
+- Review and audit rows show the frames by name, findings per area, tokens per reviewer, Post as Figma comments and
+  Copy as checklist.
+- Crit rows show four viewpoints (new user, power user, accessibility, product) with a verdict and linked notes, and Copy notes.
 - Copy rows show suggested text changes with a reason each. Edit or untick, then "Apply selected in Figma" fills the
-  composer.
+  composer. Copy as table gives a Markdown table of the changes.
 
 "Export report" saves one self-contained HTML file with the brief, sketches, frames, review, crit and copy changes.
 It makes no external requests and prints cleanly. Node ids show as Figma-blue chips.
