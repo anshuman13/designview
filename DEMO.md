@@ -144,6 +144,9 @@ Tailscale and Netbird stay allowed). Before this fix, any page you visited could
 report embeds sketches as images and sends a strict CSP. Uploads are checked by their bytes, request bodies are capped
 at 1 MB and rules at 20 KB. The sample chat is read-only on every path.
 
+**Chats without a file.** All chats with no Figma file attached sit in one "No file yet" group in Chats. Its + button
+starts another new chat.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.
@@ -158,11 +161,6 @@ These spend tokens and need a Figma token, Claude's Figma tools and a file you c
    "Stop after sketch" first if you want to pick a direction before Claude touches Figma.
 5. **Crit and copy.** Type `/crit` or `/copy tone:friendly` with a frame link. Each is one Sonnet call, a few cents.
 6. **Spend.** Click the spend pill to see the cost by phase and model.
-
-## One group for chats without a file
-
-All chats that have no Figma file attached sit in one "No file yet" group in Chats, instead of one group
-per chat folder. Its + button starts another new chat.
 
 ## Open questions for you
 
