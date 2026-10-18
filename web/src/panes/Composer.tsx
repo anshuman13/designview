@@ -5,7 +5,7 @@ import { Voice, useDictation } from './Voice';
 import { FileIcon } from './Explorer';
 import { match } from './FileSwitcher';
 import { COMPACT_AT, type ChatEvent } from '../../../shared/protocol';
-import { FLOW_MODES, PRESET_INFO, type FlowMode } from '../../../shared/design';
+import { FLOW_MODES, PRESET_INFO, TONES, type FlowMode } from '../../../shared/design';
 import { recipeText, useCustomRecipes } from '../recipes';
 import { RECIPES, toRecipe, type Recipe } from '../../../shared/recipes';
 import { imageProblem, imagesIn } from './attach';
@@ -55,10 +55,14 @@ export const recipeSlug = (title: string) => title.toLowerCase().replace(/[^a-z0
 
 export function withRecipes(commands: { name: string; description: string }[], builtin: Recipe[], custom: Recipe[]): SlashCommand[] {
   const recipes: SlashCommand[] = [];
-  const add = (r: Recipe, name: string) => {
-    if (name && !recipes.some((x) => x.name === name)) recipes.push({ name, description: r.blurb || r.title, recipe: r });
+  const add = (r: Recipe, name: string, description = r.blurb || r.title) => {
+    if (name && !recipes.some((x) => x.name === name)) recipes.push({ name, description, recipe: r });
   };
-  builtin.forEach((r) => add(r, r.id));
+  builtin.forEach((r) => {
+    add(r, r.id);
+    const tone = /\btone:(\w+)/.exec(r.prompt)?.[1];
+    if (tone) TONES.filter((t) => t !== tone).forEach((t) => add({ ...r, prompt: r.prompt.replace(/\btone:\w+/, `tone:${t}`) }, `${r.id} tone:${t}`, `${r.title} in a ${t} tone`));
+  });
   custom.forEach((r) => add(r, recipeSlug(r.title)));
   return [...recipes, ...commands.filter((c) => !recipes.some((r) => r.name === c.name))];
 }

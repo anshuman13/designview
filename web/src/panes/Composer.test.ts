@@ -149,8 +149,14 @@ describe('withRecipes', () => {
 
   it('lists the six recipes and keeps one entry for names a server command shares', () => {
     const list = withRecipes(server, RECIPES, []);
-    expect(names(list)).toEqual(['brief', 'states', 'responsive', 'copy', 'crit', 'handoff', 'design', 'audit']);
+    expect(names(list)).toEqual(['brief', 'states', 'responsive', 'copy', 'copy tone:neutral', 'copy tone:formal', 'crit', 'handoff', 'design', 'audit']);
     expect(list.find((c) => c.name === 'crit')).toMatchObject({ description: RECIPES.find((r) => r.id === 'crit')!.blurb, recipe: { id: 'crit' } });
+  });
+
+  it('adds a row per other tone after a recipe with a tone', () => {
+    const row = withRecipes(server, RECIPES, []).find((c) => c.name === 'copy tone:formal');
+    expect(row?.recipe?.prompt).toBe('/copy tone:formal {frames}');
+    expect(row?.description).toBe('Copy pass in a formal tone');
   });
 
   it('adds custom recipes under the slug of the title', () => {

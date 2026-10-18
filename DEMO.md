@@ -162,6 +162,9 @@ file) above Recent files. Click one to attach it. It needs the Chrome relay conn
 stopping. The run card says "Waiting for a Figma file" and has an "Attach Figma file" button; attaching a file resumes
 the run. Stop ends it.
 
+**Copy tones.** Type `/copy` in the composer to see three rows: `/copy` (friendly), `/copy tone:formal` and
+`/copy tone:neutral`. Pick one with Tab or a click; it fills in the command with the selected frames.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.
