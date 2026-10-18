@@ -177,6 +177,10 @@ card lists only that frame.
 page; keep typing to filter by name. Tab or a click inserts "Name (frame link)", the same form recipes and `/review`
 read. The idle hint under the composer says "# for frames" when a file is attached.
 
+**Copy review as checklist.** A review card with findings has "Copy as checklist". It copies a Markdown checklist,
+blocking issues first, each line with the layer, the rule, the fix and a link to the node in Figma. Paste it into a
+ticket or a Figma comment. Try it on the review card in the sample tour (the sample has no real file, so no links).
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.

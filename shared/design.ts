@@ -179,6 +179,16 @@ export function buildChecklist(run: Pick<BuildRun, 'url' | 'frameName' | 'matchS
   return [`Build check of ${run.url} against ${run.frameName}: ${run.matchScore}% match, ${run.diffs.length} ${run.diffs.length === 1 ? 'difference' : 'differences'}`, '', ...lines].join('\n');
 }
 
+const SEVERITY_ORDER: Severity[] = ['blocking', 'major', 'minor'];
+
+export function reviewChecklist(run: Pick<ReviewRun, 'check' | 'results' | 'frames'>, fileKey: string | null) {
+  const findings = [...run.check, ...run.results.flatMap((r) => r.findings)].sort((a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity));
+  const lines = findings.map((f) => `- [ ] **${f.severity}** ${f.nodeName ?? f.node}: ${f.rule.replace(/\.$/, '')}. Fix: ${f.fix}${fileKey && f.node ? ` (${figmaNodeUrl(fileKey, f.node)})` : ''}`);
+  const n = run.frames.length;
+  const head = `Review of ${n} ${n === 1 ? 'frame' : 'frames'}: ${findings.length} ${findings.length === 1 ? 'issue' : 'issues'}`;
+  return lines.length ? [head, '', ...lines].join('\n') : head;
+}
+
 export const TONES = ['friendly', 'neutral', 'formal'] as const;
 export type Tone = (typeof TONES)[number];
 export type CopyItem = { nodeId: string; before: string; after: string; reason: string };

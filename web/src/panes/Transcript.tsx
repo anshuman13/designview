@@ -8,7 +8,7 @@ import { insertPrompt, showNode } from './Files';
 import { useThumbs } from '../useThumbs';
 import { buildTranscript, duration, firstLine, groupTurns, relPath, stepLabel, type Block, type Item, type ToolResult, type ToolUse } from './steps';
 import { areaRows, canGoDeeper, runLabel, summarize, unposted } from './reviewRuns';
-import type { ReviewDoc } from '../../../shared/design';
+import { reviewChecklist, type ReviewDoc } from '../../../shared/design';
 import type { ChatEvent } from '../../../shared/protocol';
 import '../transcript.css';
 
@@ -217,6 +217,8 @@ function AgentRow({ use, result }: { use: ToolUse; result?: ToolResult }) {
 function ReviewCard({ runAt }: { runAt: number }) {
   const chat = useStore((s) => s.session.id);
   const hasFile = useStore((s) => !!s.session.figma);
+  const figmaKey = useStore((s) => s.session.figma?.key);
+  const [copied, setCopied] = useState(false);
   const rev = useRev('review.json');
   const [doc, setDoc] = useState<ReviewDoc | null>(null);
   const [posting, setPosting] = useState(false);
@@ -237,6 +239,12 @@ function ReviewCard({ runAt }: { runAt: number }) {
       setPosting(false);
     }
   };
+  const hasFindings = run.check.length + run.results.reduce((n, r) => n + r.findings.length, 0) > 0;
+  const copy = () => {
+    navigator.clipboard.writeText(reviewChecklist(run, figmaKey && figmaKey !== 'sample' ? figmaKey : null)).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
   return (
     <div className="tr-review">
       <div className="tr-review-head">
@@ -255,6 +263,7 @@ function ReviewCard({ runAt }: { runAt: number }) {
       </ul>
       <div className="tr-review-actions">
         <button onClick={() => window.dispatchEvent(new CustomEvent('designview:command', { detail: { id: 'page:review' } }))}>Open Review</button>
+        {hasFindings && <button onClick={copy}>{copied ? 'Copied' : 'Copy as checklist'}</button>}
         {hasFile && pending.length > 0 && <button disabled={posting} onClick={post}>Post as Figma comments</button>}
         {canGoDeeper(run) && <button onClick={() => insertPrompt('/review full')}>Review deeper</button>}
         {note && <span className="tr-review-note">{note}</span>}
