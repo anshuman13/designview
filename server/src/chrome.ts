@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { WebSocket } from 'ws';
+import { parseFigmaUrl } from '../../shared/design.js';
 
 type Tab = { id: string; title: string; url: string; at: number };
 type State = 'off' | 'connecting' | 'on';
@@ -453,6 +454,20 @@ const FOCUS = (id: string) => `(async () => {
   figma.viewport.scrollAndZoomIntoView([n]);
   return 'ok';
 })()`;
+
+export function pickFigmaTabs(list: Array<{ title: string; url: string; at: number }>, max = 5) {
+  const seen = new Set<string>();
+  const out: Array<{ title: string; url: string }> = [];
+  for (const t of [...list].sort((a, b) => b.at - a.at)) {
+    const key = /figma\.com\/(design|file|proto)\//.test(t.url) ? parseFigmaUrl(t.url)?.key : undefined;
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push({ title: t.title.replace(/\s[–-]\sFigma$/, '') || 'Figma file', url: t.url });
+  }
+  return out.slice(0, max);
+}
+
+export const figmaTabs = () => pickFigmaTabs([...tabs.values()]);
 
 function figmaTab(fileKey: string) {
   return [...tabs.values()].filter((t) => t.url.includes(`/${fileKey}`) && /figma\.com\/(design|file|proto)\//.test(t.url)).sort((a, b) => b.at - a.at)[0] ?? null;

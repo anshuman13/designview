@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { send, useStore } from './store';
+import { getJson, send, useStore } from './store';
 import { Icon } from './Icon';
 import { parseFigmaUrl } from '../../shared/design';
 import type { LiveChat } from '../../shared/protocol';
@@ -21,10 +21,12 @@ export function FilePill() {
   const live = useStore((s) => s.live);
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState('');
+  const [tabs, setTabs] = useState<Array<{ title: string; url: string }>>([]);
   const wrap = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const valid = Boolean(parseFigmaUrl(url));
   const recent = recentFiles(live, figma?.url);
+  const chromeTabs = tabs.filter((t) => parseFigmaUrl(t.url)?.key !== figma?.key);
 
   useEffect(() => {
     const show = () => setOpen(true);
@@ -35,6 +37,7 @@ export function FilePill() {
   useEffect(() => {
     if (!open) return;
     setUrl('');
+    getJson<Array<{ title: string; url: string }>>('/api/chrome/figma-tabs').then(setTabs).catch(() => setTabs([]));
     input.current?.focus();
     const down = (e: MouseEvent) => !wrap.current?.contains(e.target as Node) && setOpen(false);
     const key = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
@@ -63,6 +66,16 @@ export function FilePill() {
             <button type="submit" className="primary" disabled={!valid}>Attach</button>
           </form>
           {url && !valid && <div className="attach-note error-text">That does not look like a Figma file link.</div>}
+          {chromeTabs.length > 0 && (
+            <>
+              <div className="attach-label">Open in Chrome</div>
+              <ul>
+                {chromeTabs.map((t) => (
+                  <li key={t.url} title={t.url} onClick={() => attach(t.url)}><Icon name="browser" small /><span className="attach-name">{t.title}</span></li>
+                ))}
+              </ul>
+            </>
+          )}
           {recent.length > 0 && (
             <>
               <div className="attach-label">Recent files</div>

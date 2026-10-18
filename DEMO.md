@@ -155,6 +155,9 @@ and Review only when they have content), and the duplicate tab strip above the c
 design system check first, then each area (or "All areas" for Quick), with a spinner while it runs and a pass, fail or
 "failed" mark when it ends.
 
+**Attach from Chrome.** The attach popover lists Figma files open in Chrome ("Open in Chrome", newest first, one per
+file) above Recent files. Click one to attach it. It needs the Chrome relay connected.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.

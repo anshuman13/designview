@@ -10,7 +10,7 @@ import { watch, type FSWatcher } from 'node:fs';
 import { readFile, stat, writeFile } from 'node:fs/promises';
 import { WebSocketServer, WebSocket } from 'ws';
 import { attachTerminal, closeTerminal, closeTerminals, createTerminal, listTerminals } from './terminal.js';
-import { chromeStatus, connect as connectChrome, focusFigma, openChrome, showFigma } from './chrome.js';
+import { chromeStatus, connect as connectChrome, figmaTabs, focusFigma, openChrome, showFigma } from './chrome.js';
 import { deleteSession, getSessionInfo, listSessions } from '@anthropic-ai/claude-agent-sdk';
 import { AgentSession } from './session.js';
 import { notifyAway } from './notify.js';
@@ -279,6 +279,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/figma/mcp' && req.method === 'POST') return json({ out: await addFigmaToClaude() });
     if (url.pathname === '/api/figma/mcp') return json({ configured: (await figmaMcp()).configured, status: chat.state.session.mcp.find((m) => /figma/i.test(m.name)) ?? null });
     if (url.pathname === '/api/chrome/status') return json(chromeStatus());
+    if (url.pathname === '/api/chrome/figma-tabs') return json(figmaTabs());
     if (url.pathname === '/api/claude/status') return json(await claudeStatus());
     if (url.pathname === '/api/figma/me') return json(await me());
     if (url.pathname === '/api/figma/projects') {
