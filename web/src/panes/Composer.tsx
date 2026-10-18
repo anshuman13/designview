@@ -1,17 +1,17 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { api, notice, send, steer, useStore } from '../store';
+import { api, getJson, notice, send, steer, useStore } from '../store';
 import { Icon } from '../Icon';
 import { Voice, useDictation } from './Voice';
 import { FileIcon } from './Explorer';
 import { match } from './FileSwitcher';
 import { COMPACT_AT, type ChatEvent } from '../../../shared/protocol';
-import { FLOW_MODES, PRESET_INFO, TONES, type FlowMode } from '../../../shared/design';
+import { FLOW_MODES, PRESET_INFO, TONES, figmaNodeUrl, type FlowMode } from '../../../shared/design';
 import { recipeText, useCustomRecipes } from '../recipes';
 import { RECIPES, toRecipe, type Recipe } from '../../../shared/recipes';
 import { imageProblem, imagesIn } from './attach';
 import '../composer.css';
 
-export type Trigger = { kind: 'command' | 'file'; start: number; query: string } | { kind: 'shell' } | null;
+export type Trigger = { kind: 'command' | 'file' | 'frame'; start: number; query: string } | { kind: 'shell' } | null;
 
 export type Ranked<T> = { item: T; hits: number[]; score: number };
 
@@ -31,9 +31,9 @@ const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
 export function triggerAt(text: string, caret: number): Trigger {
   if (text.startsWith('!')) return { kind: 'shell' };
   const before = text.slice(0, Math.min(caret, text.length));
-  const m = /(?:^|\s)([/@])(\S*)$/.exec(before);
+  const m = /(?:^|\s)([/@#])(\S*)$/.exec(before);
   if (!m) return null;
-  return { kind: m[1] === '/' ? 'command' : 'file', start: before.length - 1 - m[2].length, query: m[2] };
+  return { kind: m[1] === '/' ? 'command' : m[1] === '@' ? 'file' : 'frame', start: before.length - 1 - m[2].length, query: m[2] };
 }
 
 function rank<T>(items: T[], key: (t: T) => string, query: string, limit: number): Ranked<T>[] {
@@ -48,6 +48,10 @@ function rank<T>(items: T[], key: (t: T) => string, query: string, limit: number
 export const rankCommands = <T extends { name: string }>(commands: T[], query: string, limit = MAX_ROWS) => rank(commands, (c) => c.name, query, limit);
 
 export const rankFiles = (files: string[], query: string, limit = MAX_ROWS) => rank(files, (f) => f, query, limit);
+
+export type FrameRef = { id: string; name: string; page: string };
+
+export const rankFrames = (frames: FrameRef[], query: string, limit = MAX_ROWS) => rank(frames, (f) => f.name, query, limit);
 
 export type SlashCommand = { name: string; description: string; recipe?: Recipe };
 
@@ -151,7 +155,9 @@ export function Composer() {
   const flow = useStore((s) => s.session.flow);
   const context = useStore((s) => s.session.context);
   const events = useStore((s) => s.events);
-  const hasFile = useStore((s) => !!s.session.figma);
+  const figma = useStore((s) => s.session.figma);
+  const hasFile = !!figma;
+  const figmaKey = figma?.key;
 
   const commands = useMemo(() => withRecipes(serverCommands, RECIPES, customRecipes.map(toRecipe)), [serverCommands, customRecipes]);
   const [modeOpen, setModeOpen] = useState(false);
@@ -162,6 +168,7 @@ export function Composer() {
   const [dismissed, setDismissed] = useState('');
   const [skipLink, setSkipLink] = useState('');
   const [files, setFiles] = useState<string[]>([]);
+  const [loaded, setLoaded] = useState<{ key: string; list: FrameRef[] } | null>(null);
   const [stored, setStored] = useState(readStored);
   const [hist, setHist] = useState<Hist | null>(null);
   const [imgs, setImgs] = useState<Img[]>([]);
@@ -184,10 +191,13 @@ export function Composer() {
   const trigger = useMemo(() => triggerAt(text, at), [text, at]);
   const shell = trigger?.kind === 'shell';
   const popKey = trigger && trigger.kind !== 'shell' ? `${trigger.kind}:${trigger.start}:${trigger.query}` : '';
+  const frames = useMemo(() => (loaded && loaded.key === figmaKey ? loaded.list : []), [loaded, figmaKey]);
   const items = useMemo(() => {
     if (!trigger || trigger.kind === 'shell' || popKey === dismissed) return [];
-    return trigger.kind === 'command' ? rankCommands(commands, trigger.query, MAX_COMMANDS) : rankFiles(files, trigger.query);
-  }, [trigger, popKey, dismissed, commands, files]);
+    if (trigger.kind === 'command') return rankCommands(commands, trigger.query, MAX_COMMANDS);
+    if (trigger.kind === 'frame') return rankFrames(frames, trigger.query);
+    return rankFiles(files, trigger.query);
+  }, [trigger, popKey, dismissed, commands, files, frames]);
   const open = items.length > 0;
   const history = useMemo(() => buildHistory(events, stored), [events, stored]);
   const ghost = !open && !shell && at === text.length ? ghostFor(text, history) : '';
@@ -212,6 +222,15 @@ export function Composer() {
     if (cached) { setFiles(cached); return; }
     fetch(api('/api/files')).then((r) => r.json()).then((f: string[]) => { fileCache.set(cwd, f); setFiles(f); }).catch(() => {});
   }, [trigger?.kind, cwd]);
+
+  useEffect(() => {
+    if (trigger?.kind !== 'frame' || !figmaKey || loaded?.key === figmaKey) return;
+    let live = true;
+    getJson<{ pages: Array<{ frames: FrameRef[] }> }>('/api/figma/outline')
+      .then((o) => { if (live) setLoaded({ key: figmaKey, list: o.pages.flatMap((p) => p.frames) }); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [trigger?.kind, figmaKey, loaded?.key]);
 
   useEffect(() => setSel(0), [popKey]);
 
@@ -301,6 +320,7 @@ export function Composer() {
       apply(r.text, r.caret);
     };
     if (recipe) { void recipeText(recipe).then(done); return; }
+    if (trigger.kind === 'frame') { const f = item as FrameRef; done(`${f.name} (${figmaNodeUrl(figmaKey!, f.id)})`); return; }
     done(trigger.kind === 'command' ? `/${(item as SlashCommand).name}` : `@${item as string}`);
   };
 
@@ -349,7 +369,7 @@ export function Composer() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
   };
 
-  const hint = shell ? 'Runs in the terminal' : stopping ? 'Stopping…' : !text && !running ? '/ for commands like /design, /review, /audit' : '';
+  const hint = shell ? 'Runs in the terminal' : stopping ? 'Stopping…' : !text && !running ? hasFile ? '/ for commands, # for frames' : '/ for commands like /design, /review, /audit' : '';
   const placeholder = waiting ? 'Answer below, or steer Claude' : running ? 'Steer Claude: stops the current step and sends this' : MODE_INFO[flow.mode].placeholder;
   const level = pct === null ? '' : context! >= COMPACT_AT ? 'over' : context! >= COMPACT_AT * 0.75 ? 'near' : '';
 
@@ -458,6 +478,15 @@ export function Composer() {
                 <li key={c.name} role="option" aria-selected={i === sel} className={i === sel ? 'active' : ''} onMouseDown={(e) => { e.preventDefault(); choose(i); }}>
                   <span className="cp-name">/{hl(c.name, r.hits)}</span>
                   <span className="cp-detail">{c.description}</span>
+                </li>
+              );
+            }
+            if (trigger?.kind === 'frame') {
+              const f = r.item as FrameRef;
+              return (
+                <li key={f.id} role="option" aria-selected={i === sel} className={i === sel ? 'active' : ''} onMouseDown={(e) => { e.preventDefault(); choose(i); }}>
+                  <span className="cp-name">{hl(f.name, r.hits)}</span>
+                  <span className="cp-detail">{f.page}</span>
                 </li>
               );
             }

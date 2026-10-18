@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accept, figmaLinkIn, nextMode, buildHistory, contextPercent, filesEdited, ghostFor, rankCommands, rankFiles, recipeSlug, remember, triggerAt, withRecipes } from './Composer';
+import { accept, figmaLinkIn, nextMode, buildHistory, contextPercent, filesEdited, ghostFor, rankCommands, rankFiles, rankFrames, recipeSlug, remember, triggerAt, withRecipes } from './Composer';
 import { RECIPES, toRecipe } from '../../../shared/recipes';
 import type { ChatEvent } from '../../../shared/protocol';
 
@@ -16,6 +16,11 @@ describe('triggerAt', () => {
 
   it('finds a file mention and keeps the slashes in the query', () => {
     expect(triggerAt('fix @src/store.ts', 17)).toEqual({ kind: 'file', start: 4, query: 'src/store.ts' });
+  });
+
+  it('finds a frame mention only after whitespace', () => {
+    expect(triggerAt('#he', 3)).toEqual({ kind: 'frame', start: 0, query: 'he' });
+    expect(triggerAt('a#b', 3)).toBeNull();
   });
 
   it('looks at the word under the caret only', () => {
@@ -54,6 +59,18 @@ describe('rankFiles', () => {
   it('favours the file name over the folder', () => {
     const r = rankFiles(['web/src/store.ts', 'store/web.ts', 'docs/notes.md'], 'web');
     expect(r.map((x) => x.item)).toEqual(['store/web.ts', 'web/src/store.ts']);
+  });
+});
+
+describe('rankFrames', () => {
+  const frames = [{ id: '1:2', name: 'Home', page: 'Web' }, { id: '1:3', name: 'Checkout', page: 'Web' }, { id: '1:4', name: 'Cart', page: 'App' }];
+  it('ranks by frame name', () => {
+    expect(rankFrames(frames, 'ca').map((x) => x.item.id)).toEqual(['1:4']);
+    expect(rankFrames(frames, 'ho')[0].item.name).toBe('Home');
+  });
+
+  it('returns nothing without a match', () => {
+    expect(rankFrames(frames, 'zzz')).toEqual([]);
   });
 });
 

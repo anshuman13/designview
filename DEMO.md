@@ -173,6 +173,10 @@ card lists only that frame.
 **Welcome suggestions.** An empty chat's suggestion chips follow the file state. With no file, the first chip is
 "Attach a Figma file" and opens the attach popover. With a file attached, the chips name the file and the selected frame.
 
+**Frame autocomplete.** With a file attached, type `#` in the composer to list the file's top-level frames with their
+page; keep typing to filter by name. Tab or a click inserts "Name (frame link)", the same form recipes and `/review`
+read. The idle hint under the composer says "# for frames" when a file is attached.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.
