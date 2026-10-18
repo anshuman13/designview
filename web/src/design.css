@@ -230,3 +230,6 @@
 .check-title { font-weight: 600; }
 .check-fix { color: var(--warn); font-size: var(--text-sm); }
 .check-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: 22px; }
+.home-search { width: 100%; max-width: 420px; height: 40px; padding: 0 14px; font-size: var(--text-lg); color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+.home-search:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.home-none { margin: 0; color: var(--fg-muted); font-size: var(--text-lg); }

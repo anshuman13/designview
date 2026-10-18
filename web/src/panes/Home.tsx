@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { getJson, postJson, send, useStore } from '../store';
 import { Icon } from '../Icon';
 import { insertPrompt } from './Files';
-import { runRecipe, useCustomRecipes } from '../recipes';
+import { recipeMatches, runRecipe, useCustomRecipes } from '../recipes';
 import { RecipeEditor, newDraft, type Draft } from './RecipeEditor';
 import { RECIPES, RECIPE_GROUPS, toRecipe } from '../../../shared/recipes';
 import type { DesignSystem, Settings } from '../../../shared/design';
@@ -140,6 +140,9 @@ export function Home() {
   const focus = useStore((s) => s.ui.focus);
   const custom = useCustomRecipes();
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [query, setQuery] = useState('');
+  const mine = custom.map((c) => ({ c, r: toRecipe(c) })).filter(({ r }) => recipeMatches(query, r));
+  const groups = RECIPE_GROUPS.map((g) => ({ ...g, recipes: RECIPES.filter((r) => r.group === g.id && recipeMatches(query, r)) })).filter((g) => g.recipes.length);
   useEffect(() => {
     const onNew = (e: Event) => setDraft(newDraft((e as CustomEvent<string>).detail));
     window.addEventListener('designview:recipe-new', onNew);
@@ -153,11 +156,21 @@ export function Home() {
       </header>
       <Setup />
       <Sample />
-      {RECIPE_GROUPS.map((g) => (
+      <input
+        className="home-search"
+        type="search"
+        placeholder="Search recipes"
+        aria-label="Search recipes"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => e.key === 'Escape' && setQuery('')}
+      />
+      {query && !groups.length && !mine.length && <p className="home-none">No recipe matches "{query}". Save your own with New recipe below.</p>}
+      {groups.map((g) => (
         <section key={g.id} className="home-group">
           <h2>{g.label}</h2>
           <div className="home-cards">
-            {RECIPES.filter((r) => r.group === g.id).map((r) => (
+            {g.recipes.map((r) => (
               <button key={r.id} className="home-card" onClick={() => void runRecipe(r)}>
                 <span className="home-card-icon"><Icon name={r.icon} /></span>
                 <span className="home-card-title">{r.title}</span>
@@ -174,8 +187,7 @@ export function Home() {
       <section className="home-group">
         <h2>Yours</h2>
         <div className="home-cards">
-          {custom.map((c) => {
-            const r = toRecipe(c);
+          {mine.map(({ c, r }) => {
             return (
               <div key={r.id} className="home-card-wrap">
                 <button className="home-card" onClick={() => void runRecipe(r)}>

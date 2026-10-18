@@ -179,6 +179,13 @@ build).
 
 Try: click the phone icon and scan the code with your phone camera.
 
+## 21. Recipe search
+
+Home has a search box above the recipes. It filters every group, your own recipes included, by title and
+description. Escape clears it.
+
+Try: Home, type "frame" or "copy".
+
 ## Open questions for you
 
 - "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a
