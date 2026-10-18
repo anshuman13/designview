@@ -134,6 +134,7 @@ export function Settings() {
         <Toggle label="Stop after sketch" detail="Wait for you to pick a sketch direction before Claude designs in Figma" on={s.stopAfterSketch} set={(v) => save({ stopAfterSketch: v })} />
         <Toggle label="Ask before changing the file" detail="Claude asks before each change to Figma. Off: Claude edits without asking, after saving a version" on={s.askBeforeEdit} set={(v) => save({ askBeforeEdit: v })} />
         <Toggle label="Follow Claude in Figma" detail="Move the Figma tab to the frame Claude is working on" on={s.followClaude} set={(v) => save({ followClaude: v })} />
+        <Toggle label="Check frames against the design system after Claude edits Figma (free)" detail="Runs the free design system check on the frames Claude touched in a chat turn" on={s.autoCheck} set={(v) => save({ autoCheck: v })} />
         <div className="field">
           <span>Default review</span>
           <div className="seg">

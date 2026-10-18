@@ -269,6 +269,15 @@ Cards come back when you reopen a chat. The sample tour shows one.
 
 Try: Chats, Sample tour; the card is at the top of the conversation.
 
+## 31. Free check after Claude edits Figma
+
+In Chat mode, when a turn used use_figma, DesignView runs the free design system check (no model tokens)
+on the frames Claude touched, or on all top-level frames if it cannot tell which, and posts the review card
+in the conversation. The status line shows "Checking edited frames" meanwhile. Turn it off in Settings,
+Design runs: "Check frames against the design system after Claude edits Figma".
+
+Try: attach a real file, ask Claude in Chat mode to change a frame; a review card follows the reply.
+
 ## Open questions for you
 
 - "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a

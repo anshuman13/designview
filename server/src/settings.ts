@@ -26,6 +26,7 @@ export function clean(s: Settings): Settings {
     areas: Array.isArray(s.areas) ? AREAS.filter((a) => s.areas.includes(a)) : DEFAULT_SETTINGS.areas,
     askBeforeEdit: Boolean(s.askBeforeEdit),
     followClaude: s.followClaude !== false,
+    autoCheck: s.autoCheck !== false,
     devTools: Boolean(s.devTools),
     dailyBudgetUsd: Math.max(0, Number(s.dailyBudgetUsd) || 0),
   };

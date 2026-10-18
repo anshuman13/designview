@@ -111,6 +111,7 @@ export type Settings = {
   areas: Area[];
   askBeforeEdit: boolean;
   followClaude: boolean;
+  autoCheck: boolean;
   devTools: boolean;
   dailyBudgetUsd: number;
 };
@@ -123,6 +124,7 @@ export const DEFAULT_SETTINGS: Settings = {
   areas: ['components', 'accessibility', 'brief'],
   askBeforeEdit: false,
   followClaude: true,
+  autoCheck: true,
   devTools: false,
   dailyBudgetUsd: 0,
 };

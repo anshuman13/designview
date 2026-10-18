@@ -16,6 +16,7 @@ import { parseTone, runCopy, runCrit } from './crit.js';
 import { parseBuildArg, runBuildCheck } from './buildcheck.js';
 import { failedAreas, readDesign, readReview, runReview, toFix } from './review.js';
 import { settings } from './settings.js';
+import { touchedIds } from './touched.js';
 import { loadImages, withRefs, type Images } from './attach.js';
 import { readRules, rulesBlock } from './rules.js';
 import { addDaily, addSpend, emptySpend, loadChatSpend, modelTokens, saveChatSpend } from './spend.js';
@@ -54,6 +55,9 @@ export class AgentSession {
 
   private liveText = new Map<string, string>();
   private edits = new Map<string, string>();
+  private figmaUses = new Set<string>();
+  private figmaEdited = false;
+  private touched = new Set<string>();
   private liveMsgId = '';
 
   private resumedAuto = false;
@@ -692,6 +696,37 @@ export class AgentSession {
     this.setSession({ running: this.turns > 0 || next !== null || flowing, compacting: false, stopping: false });
     if (flowing) void this.advanceFlow();
     else if (next) this.sendPrompt(next);
+    if (idle) this.autoCheck(flowing);
+  }
+
+  private autoCheck(flowing: boolean) {
+    const edited = this.figmaEdited;
+    const touched = [...this.touched];
+    this.figmaEdited = false;
+    this.touched.clear();
+    this.figmaUses.clear();
+    const key = this.figma?.key;
+    if (!edited || flowing || !key || key === SAMPLE_KEY || this.state.session.flow.mode !== 'chat' || this.flowActive() || this.work) return;
+    void this.checkEdited(key, touched);
+  }
+
+  private async checkEdited(key: string, touched: string[]) {
+    if (!(await settings().catch(() => null))?.autoCheck) return;
+    try {
+      this.setStatus('Checking edited frames');
+      const { fileOutline } = await import('./figma.js');
+      const all = (await fileOutline(key)).pages.flatMap((p) => p.frames.map((f) => f.id));
+      const hit = all.filter((id) => touched.includes(id));
+      const frames = hit.length ? hit : all;
+      if (!frames.length) return;
+      const run = await runReview({ dir: this.cwd, fileKey: key, frames, preset: 'check', areas: [], round: 0, kind: 'audit' });
+      this.reviewDone(run);
+    } catch (err) {
+      console.error('auto check failed', err);
+      this.system('Could not check the edited frames');
+    } finally {
+      if (!this.state.session.running) this.setStatus('Idle');
+    }
   }
 
   private followUp() {
@@ -785,6 +820,12 @@ export class AgentSession {
             this.pushEvent(toolUseEvent(block.id, block.name, block.input, Date.now()));
             const file = (block.input as { file_path?: unknown })?.file_path;
             if (EDIT_TOOLS.has(block.name) && typeof file === 'string') this.edits.set(block.id, file);
+            if (/use_figma$/.test(block.name)) {
+              this.figmaUses.add(block.id);
+              for (const id of touchedIds(JSON.stringify(block.input ?? {}))) this.touched.add(id);
+            } else if (block.name.endsWith('__set_status')) {
+              for (const id of touchedIds(JSON.stringify((block.input as { nodes?: unknown })?.nodes ?? []))) this.touched.add(id);
+            }
           }
         }
         return;
@@ -799,6 +840,10 @@ export class AgentSession {
           const edited = this.edits.get(block.tool_use_id);
           this.edits.delete(block.tool_use_id);
           if (edited && !block.is_error) this.noteFile(path.relative(this.cwd, edited), 'tool');
+          if (this.figmaUses.delete(block.tool_use_id) && !block.is_error) {
+            this.figmaEdited = true;
+            for (const id of touchedIds(toolResultText(block))) this.touched.add(id);
+          }
           this.pushEvent({ id: randomUUID(), kind: 'tool_result', toolUseId: block.tool_use_id, text: toolResultText(block).slice(0, 4000), isError: Boolean(block.is_error), at: Date.now() });
         }
         return;
