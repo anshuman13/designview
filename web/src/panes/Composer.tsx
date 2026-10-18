@@ -9,6 +9,7 @@ import { FLOW_MODES, PRESET_INFO, TONES, figmaNodeUrl, type FlowMode } from '../
 import { recipeText, useCustomRecipes } from '../recipes';
 import { RECIPES, toRecipe, type Recipe } from '../../../shared/recipes';
 import { imageProblem, imagesIn } from './attach';
+import { useThumbs } from '../useThumbs';
 import '../composer.css';
 
 export type Trigger = { kind: 'command' | 'file' | 'frame'; start: number; query: string } | { kind: 'shell' } | null;
@@ -199,6 +200,7 @@ export function Composer() {
     return rankFiles(files, trigger.query);
   }, [trigger, popKey, dismissed, commands, files, frames]);
   const open = items.length > 0;
+  const thumb = useThumbs(trigger?.kind === 'frame' ? figmaKey : undefined, trigger?.kind === 'frame' ? items.map((r) => [(r.item as FrameRef).id, 0]) : []);
   const history = useMemo(() => buildHistory(events, stored), [events, stored]);
   const ghost = !open && !shell && at === text.length ? ghostFor(text, history) : '';
   const link = useMemo(() => (hasFile ? null : figmaLinkIn(text)), [hasFile, text]);
@@ -485,6 +487,7 @@ export function Composer() {
               const f = r.item as FrameRef;
               return (
                 <li key={f.id} role="option" aria-selected={i === sel} className={i === sel ? 'active' : ''} onMouseDown={(e) => { e.preventDefault(); choose(i); }}>
+                  <span className="cp-thumb">{thumb(f.id) && <img src={thumb(f.id)!} alt="" />}</span>
                   <span className="cp-name">{hl(f.name, r.hits)}</span>
                   <span className="cp-detail">{f.page}</span>
                 </li>

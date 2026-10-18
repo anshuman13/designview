@@ -175,7 +175,8 @@ card lists only that frame.
 
 **Frame autocomplete.** With a file attached, type `#` in the composer to list the file's top-level frames with their
 page; keep typing to filter by name. Tab or a click inserts "Name (frame link)", the same form recipes and `/review`
-read. The idle hint under the composer says "# for frames" when a file is attached.
+read. The idle hint under the composer says "# for frames" when a file is attached. Each row shows a small
+thumbnail of the frame, rendered by Figma and cached, so frames with similar names are easy to tell apart.
 
 **Copy review as checklist.** A review card with findings has "Copy as checklist". It copies a Markdown checklist,
 blocking issues first, each line with the layer, the rule, the fix and a link to the node in Figma. Paste it into a
