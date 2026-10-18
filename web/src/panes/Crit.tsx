@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { postJson } from '../store';
 import { Icon } from '../Icon';
-import { PERSONAS, PERSONA_NAMES, type CopyItem, type CopyRun, type CritRun, type Persona } from '../../../shared/design';
+import { PERSONAS, PERSONA_NAMES, copyTable, critMarkdown, type CopyItem, type CopyRun, type CritRun, type Persona } from '../../../shared/design';
 import { showNode, insertPrompt } from './Files';
 
 const PERSONA_ICON: Record<Persona, string> = { 'new-user': 'person', 'power-user': 'zap', accessibility: 'eye', product: 'target' };
@@ -15,6 +15,7 @@ export function CritDetail({ run }: { run: CritRun }) {
       <div className="crit-head">
         <p className="crit-summary">{run.summary}</p>
         <div className="muted small">{when(run.at)} · {run.frames.length} {run.frames.length === 1 ? 'frame' : 'frames'} · {cost(run)}</div>
+        <CopyButton label="Copy notes" text={() => critMarkdown(run)} />
       </div>
       <div className="crit-grid">
         {PERSONAS.map((id) => run.personas.find((p) => p.id === id)).filter((p) => !!p).map((p) => (
@@ -40,6 +41,16 @@ export function CritDetail({ run }: { run: CritRun }) {
       </div>
     </>
   );
+}
+
+function CopyButton({ text, label }: { text: () => string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(text()).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return <button onClick={copy}><Icon name="copy" small /> {copied ? 'Copied' : label}</button>;
 }
 
 const grow = (e: { currentTarget: HTMLTextAreaElement }) => {
@@ -73,6 +84,7 @@ export function CopyDetail({ run }: { run: CopyRun }) {
           <>
             <button onClick={() => setPicked(allOn ? new Set() : new Set(run.items.map((i) => i.nodeId)))}>{allOn ? 'Select none' : 'Accept all'}</button>
             <button className="primary" disabled={!picked.size} onClick={apply}>Apply selected in Figma ({picked.size})</button>
+            <CopyButton label="Copy as table" text={() => copyTable(run)} />
           </>
         )}
         {note && <span className="muted">{note}</span>}

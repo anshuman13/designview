@@ -189,6 +189,19 @@ export function reviewChecklist(run: Pick<ReviewRun, 'check' | 'results' | 'fram
   return lines.length ? [head, '', ...lines].join('\n') : head;
 }
 
+const POINT_LABEL: Record<CritPoint['kind'], string> = { like: 'Like', concern: 'Concern', idea: 'Idea' };
+
+export function critMarkdown(run: Pick<CritRun, 'summary' | 'personas'>) {
+  const blocks = PERSONAS.flatMap((id) => run.personas.filter((p) => p.id === id)).map((p) =>
+    [`## ${PERSONA_NAMES[p.id]}`, '', p.verdict, '', ...p.points.map((pt) => `- **${POINT_LABEL[pt.kind]}:** ${pt.text}${pt.nodeId ? ` (${pt.nodeId})` : ''}`)].join('\n'));
+  return [run.summary, ...blocks].join('\n\n');
+}
+
+export function copyTable(run: Pick<CopyRun, 'items'>) {
+  const cell = (t: string) => t.replace(/\|/g, '\\|').replace(/\s*\n\s*/g, ' ');
+  return ['| Before | After | Reason |', '| --- | --- | --- |', ...run.items.map((i) => `| ${cell(i.before)} | ${cell(i.after)} | ${cell(i.reason)} |`)].join('\n');
+}
+
 export const TONES = ['friendly', 'neutral', 'formal'] as const;
 export type Tone = (typeof TONES)[number];
 export type CopyItem = { nodeId: string; before: string; after: string; reason: string };
