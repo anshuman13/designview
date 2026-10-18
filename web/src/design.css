@@ -107,10 +107,18 @@
 
 /* Review */
 .review-page { flex: 1; min-height: 0; overflow: auto; padding: 16px 20px 40px; display: flex; flex-direction: column; gap: 16px; }
-.review-bar { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.review-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .review-bar .spacer { flex: 1; }
 .review-bar select { font: inherit; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--bg); }
 .review-summary { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.run-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); }
+.run-list > li + li { border-top: 1px solid var(--border); }
+.run-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 12px; background: none; text-align: left; min-height: 40px; }
+.run-row:hover { background: var(--bg-hover); }
+.run-kind { font-weight: 600; min-width: 52px; }
+.run-sum { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg-muted); font-size: var(--text-sm); }
+.run-detail { padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 16px; }
+.run-dev { border: 1px solid var(--border); border-radius: var(--radius); }
 .review-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; align-items: start; }
 .area-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
 .area-card header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; }
@@ -128,13 +136,10 @@
 .f-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .f-rule { font-weight: 500; }
 .f-fix { color: var(--fg-muted); font-size: var(--text-sm); }
-.preset { display: flex; flex-direction: column; gap: 6px; }
 .seg { display: inline-flex; padding: 3px; background: var(--bg-sunken); border: 1px solid var(--border); border-radius: 10px; gap: 2px; width: fit-content; }
 .seg button { background: transparent; border-radius: 8px; padding: 4px 14px; min-height: 32px; color: var(--fg-muted); }
 .seg button.on { background: var(--bg); color: var(--fg); font-weight: 600; box-shadow: var(--shadow-sm); }
-.area-ticks { display: flex; flex-wrap: wrap; gap: 6px 16px; }
-.area-ticks label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-.area-ticks input, .toggle-row input { width: 18px; height: 18px; accent-color: var(--accent); }
+.toggle-row input { width: 18px; height: 18px; accent-color: var(--accent); }
 
 /* Settings */
 .settings-page { flex: 1; overflow: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; max-width: 760px; }

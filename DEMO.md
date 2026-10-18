@@ -250,6 +250,16 @@ stay editable from the palette.
 
 Try: type /sta and press Tab. Clear the text afterwards.
 
+## 29. Review as one list
+
+The Review tab no longer has Review / Crit / Copy / Changes / Build sub-tabs. It is one list of every
+review, audit, crit and copy pass, newest first, one line each (kind, time, counts, tokens). The newest is
+open; click any row to expand it. The header is a Review button (puts /review in the composer) and Quick |
+Full. Check and Focused presets are gone. Changes moved to a "Changes" section in the Files panel; Build
+check shows at the bottom of Review only with dev tools on. The sample tour's runs now show as minutes ago.
+
+Try: Sample tour, Review tab, click Crit and Copy rows.
+
 ## Open questions for you
 
 - "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a

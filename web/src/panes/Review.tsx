@@ -1,66 +1,96 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, getJson, postJson, send, useRev, useStore } from '../store';
 import { Icon } from '../Icon';
-import { AREAS, AREA_NAMES, PRESETS, PRESET_INFO, type Area, type Finding, type ReviewDoc, type ReviewPreset, type ReviewRun } from '../../../shared/design';
+import { AREAS, AREA_NAMES, PRESET_INFO, type Area, type CopyRun, type CritRun, type Finding, type ReviewDoc, type ReviewRun } from '../../../shared/design';
 import { showNode, insertPrompt } from './Files';
 import { Empty, ReviewArt } from './Empty';
-import { Copy, Crit } from './Crit';
-import { Changes } from './Changes';
+import { CopyDetail, CritDetail } from './Crit';
 import { BuildCheck } from './BuildCheck';
+import { KIND_LABEL, ago, mergeRuns, shownPreset, summarize, type RunRow } from './reviewRuns';
 
 const SEV: Record<Finding['severity'], string> = { blocking: 'Blocking', major: 'Major', minor: 'Minor' };
-type Tab = 'review' | 'crit' | 'copy' | 'changes' | 'build';
+const k = (n: number) => (n >= 1000 ? `${Math.round(n / 1000)}k` : String(n));
+const when = (t: number) => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-export function Review() {
-  const [tab, setTab] = useState<Tab>('review');
+export function Review({ dev = false }: { dev?: boolean }) {
+  const chat = useStore((s) => s.session.id);
+  const preset = useStore((s) => shownPreset(s.session.flow.preset));
+  const reviewRev = useRev('review.json');
+  const critRev = useRev('crit.json');
+  const copyRev = useRev('copy.json');
+  const [doc, setDoc] = useState<ReviewDoc>({ runs: [] });
+  const [crit, setCrit] = useState<CritRun[]>([]);
+  const [copy, setCopy] = useState<CopyRun[]>([]);
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [build, setBuild] = useState(false);
+
+  useEffect(() => { getJson<ReviewDoc>('/api/review').then(setDoc).catch(() => {}); }, [chat, reviewRev]);
+  useEffect(() => { getJson<{ runs: CritRun[] }>('/api/crit').then((d) => setCrit(d.runs)).catch(() => {}); }, [chat, critRev]);
+  useEffect(() => { getJson<{ runs: CopyRun[] }>('/api/copy').then((d) => setCopy(d.runs)).catch(() => {}); }, [chat, copyRev]);
+  useEffect(() => { setOpen({}); }, [chat]);
+
+  const rows = mergeRuns(doc.runs, crit, copy);
+
   return (
-    <div className="crit-wrap">
-      <div className="crit-tabs">
-        <div className="seg" role="radiogroup" aria-label="Review type">
-          {([['review', 'Review'], ['crit', 'Crit'], ['copy', 'Copy'], ['changes', 'Changes'], ['build', 'Build']] as const).map(([id, name]) => (
-            <button key={id} role="radio" aria-checked={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{name}</button>
+    <div className="review-page">
+      <div className="review-bar">
+        <button className="primary" onClick={() => insertPrompt('/review ')}><Icon name="play" small /> Review</button>
+        <div className="seg" role="radiogroup" aria-label="Review depth">
+          {(['quick', 'full'] as const).map((p) => (
+            <button key={p} role="radio" aria-checked={preset === p} className={preset === p ? 'on' : ''} title={PRESET_INFO[p].detail} onClick={() => send({ type: 'set_flow', patch: { preset: p } })}>{PRESET_INFO[p].label}</button>
           ))}
         </div>
-        <button className="ghost export-report" style={{ marginLeft: 'auto' }} onClick={() => window.open(api('/api/report'), '_blank')}>Export report</button>
+        <span className="spacer" />
+        <button className="ghost export-report" onClick={() => window.open(api('/api/report'), '_blank')}>Export report</button>
         <a className="ghost" href={api('/api/report?download=1')} download aria-label="Download report" title="Download report"><Icon name="cloud-download" /></a>
       </div>
-      {tab === 'review' && <ReviewRuns />}
-      {tab === 'crit' && <Crit />}
-      {tab === 'copy' && <Copy />}
-      {tab === 'changes' && <Changes />}
-      {tab === 'build' && <BuildCheck />}
+      {!rows.length && <Empty art={<ReviewArt />} title="Nothing reviewed yet" text="Reviews run after every Design run, or type /review with frame links." />}
+      {!!rows.length && (
+        <ul className="run-list">
+          {rows.map((row, i) => {
+            const on = open[row.id] ?? i === 0;
+            return (
+              <li key={row.id} className={on ? 'open' : ''}>
+                <button className="run-row" aria-expanded={on} onClick={() => setOpen((o) => ({ ...o, [row.id]: !on }))}>
+                  <Icon name={on ? 'chevron-down' : 'chevron-right'} small />
+                  <span className={`run-kind ${row.kind}`}>{KIND_LABEL[row.kind]}</span>
+                  <span className="muted" title={when(row.at)}>{ago(row.at)}</span>
+                  <span className="run-sum">{summarize(row)}</span>
+                  {row.tokens > 0 && <span className="chip" title="Tokens this run used">{k(row.tokens)}</span>}
+                </button>
+                {on && <div className="run-detail"><RunDetail row={row} doc={doc} onDoc={setDoc} /></div>}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {dev && (
+        <section className="run-dev">
+          <button className="run-row" aria-expanded={build} onClick={() => setBuild((v) => !v)}><Icon name={build ? 'chevron-down' : 'chevron-right'} small /> Build check</button>
+          {build && <BuildCheck />}
+        </section>
+      )}
     </div>
   );
 }
 
-const k = (n: number) => (n >= 1000 ? `${Math.round(n / 1000)}k` : String(n));
-const when = (t: number) => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+function RunDetail({ row, doc, onDoc }: { row: RunRow; doc: ReviewDoc; onDoc: (d: ReviewDoc) => void }) {
+  if (row.kind === 'crit') return <CritDetail run={row.run} />;
+  if (row.kind === 'copy') return <CopyDetail run={row.run} />;
+  return <ReviewDetail run={row.run} doc={doc} onDoc={onDoc} />;
+}
 
-function ReviewRuns() {
-  const chat = useStore((s) => s.session.id);
-  const running = useStore((s) => s.session.running);
-  const flow = useStore((s) => s.session.flow);
-  const rev = useRev('review.json');
-  const [doc, setDoc] = useState<ReviewDoc>({ runs: [] });
-  const [sel, setSel] = useState<string | null>(null);
+function ReviewDetail({ run, doc, onDoc }: { run: ReviewRun; doc: ReviewDoc; onDoc: (d: ReviewDoc) => void }) {
   const [posting, setPosting] = useState(false);
   const [note, setNote] = useState('');
-
-  useEffect(() => {
-    getJson<ReviewDoc>('/api/review').then((d) => { setDoc(d); setSel(null); }).catch(() => {});
-  }, [chat, rev]);
-
-  const runs = [...doc.runs].reverse();
-  const run = runs.find((r) => r.id === sel) ?? runs[0];
-  const all = useMemo(() => (run ? [...run.check, ...run.results.flatMap((r) => r.findings)] : []), [run]);
-  const unposted = all.filter((f) => !doc.posted?.includes(f.id) && f.severity !== 'minor');
+  const unposted = [...run.check, ...run.results.flatMap((r) => r.findings)].filter((f) => !doc.posted?.includes(f.id) && f.severity !== 'minor');
 
   const post = async () => {
     setPosting(true);
     try {
       const r = await postJson<{ posted: number }>('/api/review/post', { ids: unposted.map((f) => f.id) });
       setNote(`Posted ${r.posted} comments in Figma`);
-      setDoc(await getJson<ReviewDoc>('/api/review'));
+      onDoc(await getJson<ReviewDoc>('/api/review'));
     } catch (e) {
       setNote((e as Error).message);
     } finally {
@@ -69,43 +99,21 @@ function ReviewRuns() {
   };
 
   return (
-    <div className="review-page">
-      <div className="review-bar">
-        <PresetPicker preset={flow.preset} areas={flow.areas} />
-        <button className="primary" disabled={running} onClick={() => send({ type: 'prompt', text: `/review ${flow.preset}` })}><Icon name="play" small /> Review the design</button>
-        <button disabled={running} onClick={() => send({ type: 'prompt', text: '/audit' })} title="Design system check across every frame in the file, no model calls">Audit the file</button>
-        <span className="spacer" />
-        {runs.length > 1 && (
-          <select value={run?.id} onChange={(e) => setSel(e.target.value)}>
-            {runs.map((r) => <option key={r.id} value={r.id}>{label(r)} · {when(r.at)}</option>)}
-          </select>
-        )}
+    <>
+      <div className="review-summary">
+        <div><b>{run.kind === 'audit' ? 'File audit' : run.kind === 'verify' ? 'Final check' : `Review ${run.round} · ${PRESET_INFO[run.preset].label}`}</b> · {when(run.at)} · {run.frames.length} frames</div>
+        <div className="muted">{run.tokens ? `${k(run.tokens)} tokens · $${run.costUsd.toFixed(2)}` : 'No model tokens used'}</div>
+        {unposted.length > 0 && <button disabled={posting} onClick={post}><Icon name="comment" small /> Post {unposted.length} as Figma comments</button>}
+        {note && <span className="muted">{note}</span>}
       </div>
-      {!run && <Empty art={<ReviewArt />} title="Nothing reviewed yet" text="Every review starts with a free design system check, then the reviewers you pick with the presets above. Review any frames by pasting their links after /review." action={{ label: 'Run a review', onClick: () => insertPrompt('/review') }} />}
-      {run && (
-        <>
-          <div className="review-summary">
-            <div><b>{label(run)}</b> · {when(run.at)} · {run.frames.length} frames</div>
-            <div className="muted">{run.tokens ? `${k(run.tokens)} tokens · $${run.costUsd.toFixed(2)}` : 'No model tokens used'}</div>
-            {unposted.length > 0 && <button disabled={posting} onClick={post}><Icon name="comment" small /> Post {unposted.length} as Figma comments</button>}
-            {note && <span className="muted">{note}</span>}
-          </div>
-          <div className="review-grid">
-            <AreaCard title="Design system check" sub={run.checkError ?? (run.check.length ? `${run.check.length} issues` : 'No issues')} pass={!run.checkError && !run.check.some((f) => f.severity !== 'minor')} tokens={0} findings={run.check} grouped />
-            {run.results.map((r) => (
-              <AreaCard key={r.area} title={r.area === 'all' ? 'Reviewer · all areas' : AREA_NAMES[r.area]} sub={r.error ? `Failed: ${r.error}` : r.summary} pass={r.pass} tokens={r.tokens} findings={r.findings} />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+      <div className="review-grid">
+        <AreaCard title="Design system check" sub={run.checkError ?? (run.check.length ? `${run.check.length} issues` : 'No issues')} pass={!run.checkError && !run.check.some((f) => f.severity !== 'minor')} tokens={0} findings={run.check} grouped />
+        {run.results.map((r) => (
+          <AreaCard key={r.area} title={r.area === 'all' ? 'Reviewer · all areas' : AREA_NAMES[r.area]} sub={r.error ? `Failed: ${r.error}` : r.summary} pass={r.pass} tokens={r.tokens} findings={r.findings} />
+        ))}
+      </div>
+    </>
   );
-}
-
-function label(r: ReviewRun) {
-  if (r.kind === 'audit') return 'File audit';
-  if (r.kind === 'verify') return 'Final check';
-  return `Review ${r.round} · ${PRESET_INFO[r.preset].label}`;
 }
 
 function AreaCard({ title, sub, pass, tokens, findings, grouped = false }: { title: string; sub: string; pass: boolean; tokens: number; findings: Finding[]; grouped?: boolean }) {
@@ -138,28 +146,5 @@ function AreaCard({ title, sub, pass, tokens, findings, grouped = false }: { tit
         </ul>
       )}
     </section>
-  );
-}
-
-export function PresetPicker({ preset, areas, compact = false }: { preset: ReviewPreset; areas: Area[]; compact?: boolean }) {
-  return (
-    <div className={`preset ${compact ? 'compact' : ''}`}>
-      <div className="seg" role="radiogroup" aria-label="Review preset">
-        {PRESETS.map((p) => (
-          <button key={p} role="radio" aria-checked={preset === p} className={preset === p ? 'on' : ''} title={PRESET_INFO[p].detail} onClick={() => send({ type: 'set_flow', patch: { preset: p } })}>{PRESET_INFO[p].label}</button>
-        ))}
-      </div>
-      {preset === 'focused' && (
-        <div className="area-ticks">
-          {AREAS.map((a) => (
-            <label key={a}>
-              <input type="checkbox" checked={areas.includes(a)} onChange={(e) => send({ type: 'set_flow', patch: { areas: e.target.checked ? [...areas, a] : areas.filter((x) => x !== a) } })} />
-              {AREA_NAMES[a]}
-            </label>
-          ))}
-        </div>
-      )}
-      {!compact && <div className="muted small">{PRESET_INFO[preset].detail}</div>}
-    </div>
   );
 }

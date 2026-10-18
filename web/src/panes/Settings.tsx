@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { getJson, postJson } from '../store';
 import { Icon } from '../Icon';
 import { CHECKS, CHECK_IDS, CHECK_TITLES, addFigmaToClaude, type CheckId, type CheckResult } from '../setupChecks';
-import { AREAS, AREA_NAMES, PRESETS, PRESET_INFO, type Settings as S } from '../../../shared/design';
+import { PRESET_INFO, type Settings as S } from '../../../shared/design';
+import { shownPreset } from './reviewRuns';
 
 type McpInfo = { configured: boolean; status: { status: string; error?: string } | null };
 
@@ -136,17 +137,9 @@ export function Settings() {
         <div className="field">
           <span>Default review</span>
           <div className="seg">
-            {PRESETS.map((p) => <button key={p} className={s.preset === p ? 'on' : ''} title={PRESET_INFO[p].detail} onClick={() => save({ preset: p })}>{PRESET_INFO[p].label}</button>)}
+            {(['quick', 'full'] as const).map((p) => <button key={p} className={shownPreset(s.preset) === p ? 'on' : ''} title={PRESET_INFO[p].detail} onClick={() => save({ preset: p })}>{PRESET_INFO[p].label}</button>)}
           </div>
-          <span className="muted small">{PRESET_INFO[s.preset].detail}. New chats start with this.</span>
-        </div>
-        <div className="field">
-          <span>Areas for Focused reviews</span>
-          <div className="area-ticks">
-            {AREAS.map((a) => (
-              <label key={a}><input type="checkbox" checked={s.areas.includes(a)} onChange={(e) => save({ areas: e.target.checked ? [...s.areas, a] : s.areas.filter((x) => x !== a) })} />{AREA_NAMES[a]}</label>
-            ))}
-          </div>
+          <span className="muted small">{PRESET_INFO[shownPreset(s.preset)].detail}. New chats start with this.</span>
         </div>
       </section>
 

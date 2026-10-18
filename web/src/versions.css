@@ -40,3 +40,9 @@
   .ch-side { grid-template-columns: 1fr; }
 }
 .ch-stage.ch-slider { max-width: 720px; width: 100%; align-self: center; }
+
+.side-section .changes { flex-direction: column; flex: none; padding: 0; gap: 10px; }
+.side-section .ch-list { width: auto; flex-direction: row; overflow-x: auto; overflow-y: visible; flex: none; }
+.side-section .ch-list li { flex: none; width: 180px; }
+.side-section .ch-main { overflow: visible; flex: none; }
+.side-section .ch-side { grid-template-columns: 1fr; }

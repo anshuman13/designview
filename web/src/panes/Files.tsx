@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getJson, postJson, send, useStore } from '../store';
 import { Icon } from '../Icon';
 import { Empty, FilesArt } from './Empty';
+import { Changes } from './Changes';
 import { figmaNodeUrl } from '../../../shared/design';
 
 type Frame = { id: string; name: string; page: string; type: string; w: number; h: number };
@@ -20,6 +21,7 @@ export function Files() {
   const [thumbs, setThumbs] = useState<Record<string, string | null>>({});
   const [error, setError] = useState('');
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [changes, setChanges] = useState(false);
 
   useEffect(() => {
     setOutline(null);
@@ -67,6 +69,8 @@ export function Files() {
               )}
             </div>
           ))}
+          <button className="page-row" onClick={() => setChanges((v) => !v)}><Icon name={changes ? 'chevron-down' : 'chevron-right'} small /> Changes</button>
+          {changes && <Changes />}
         </section>
       ) : (
         <Empty art={<FilesArt />} title="Attach a Figma file" text="Attach a file to open its frames here." action={{ label: 'Attach a Figma file', onClick: attachFigma }} />
