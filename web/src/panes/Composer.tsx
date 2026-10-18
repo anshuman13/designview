@@ -145,6 +145,8 @@ type Img = { ref: string; url: string };
 
 type Hist = { list: string[]; index: number; draft: string };
 
+const drafts = new Map<string, string>();
+
 export function Composer() {
   const cwd = useStore((s) => s.session.cwd);
   const chatId = useStore((s) => s.session.id);
@@ -281,6 +283,14 @@ export function Composer() {
     setImgs([]);
   };
   useEffect(clearImgs, [chatId]);
+  const textRef = useRef(text);
+  textRef.current = text;
+  useEffect(() => {
+    const saved = drafts.get(chatId) ?? '';
+    if (saved !== textRef.current) apply(saved);
+    setHist(null);
+    return () => { drafts.set(chatId, textRef.current); };
+  }, [chatId]);
   useEffect(() => () => imgsRef.current.forEach((i) => URL.revokeObjectURL(i.url)), []);
 
   const attach = async (list: File[]) => {

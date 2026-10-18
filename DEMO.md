@@ -190,6 +190,10 @@ tokens). The app reads the file's last-modified time at most once a minute. Not 
 **Chat search.** The Chats panel has a "Search chats" box under New chat. It matches file names (the whole group
 stays) and chat titles, and lists every matching recent chat instead of the last five. Escape clears it.
 
+**Drafts per chat.** Unsent text in the composer stays with its chat: switch to another chat and back, and the draft
+is still there. Drafts live in memory only and go away on reload. A new chat that was never sent closes when you leave
+it, and its draft goes with it.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.
