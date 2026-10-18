@@ -260,6 +260,15 @@ check shows at the bottom of Review only with dev tools on. The sample tour's ru
 
 Try: Sample tour, Review tab, click Crit and Copy rows.
 
+## 30. Review card in the conversation
+
+When a review or audit finishes, a card appears in the conversation: the run (e.g. "Review 1 · Full"),
+blocking and major counts, tokens, a pass or fail mark per area, and buttons for Open Review, Post as
+Figma comments, and Review deeper (puts /review full in the composer, shown after a Quick review or audit).
+Cards come back when you reopen a chat. The sample tour shows one.
+
+Try: Chats, Sample tour; the card is at the top of the conversation.
+
 ## Open questions for you
 
 - "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a

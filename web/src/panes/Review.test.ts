@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ago, mergeRuns, shownPreset, summarize } from './reviewRuns';
+import { ago, areaRows, canGoDeeper, mergeRuns, runLabel, shownPreset, summarize, unposted } from './reviewRuns';
 import type { CopyRun, CritRun, Finding, ReviewRun } from '../../../shared/design';
 
 const finding = (severity: Finding['severity']): Finding => ({ id: severity, area: 'color', severity, rule: 'r', fix: 'f', node: '1:2' }) as Finding;
@@ -47,5 +47,24 @@ describe('ago', () => {
     expect(ago(0, 5 * 60_000)).toBe('5m ago');
     expect(ago(0, 3 * 3600_000)).toBe('3h ago');
     expect(ago(0, 2 * 86400_000)).toBe('2d ago');
+  });
+});
+
+describe('review card helpers', () => {
+  it('labels runs and offers a deeper review only for quick and check presets', () => {
+    expect(runLabel(review('a', 1))).toBe('Review 1 · Quick');
+    expect(runLabel(review('a', 1, { kind: 'audit' }))).toBe('File audit');
+    expect(canGoDeeper(review('a', 1))).toBe(true);
+    expect(canGoDeeper(review('a', 1, { preset: 'full' }))).toBe(false);
+  });
+
+  it('lists the check first and marks failed reviewers', () => {
+    const run = review('a', 1, { check: [finding('major')], results: [{ area: 'all', pass: false, summary: '', findings: [], tokens: 0, costUsd: 0, error: 'boom' }] });
+    expect(areaRows(run)).toEqual([{ name: 'Design system check', pass: false, failed: false }, { name: 'All areas', pass: false, failed: true }]);
+  });
+
+  it('skips posted and minor findings', () => {
+    const run = review('a', 1, { check: [finding('blocking'), finding('major'), finding('minor')] });
+    expect(unposted(run, { runs: [run], posted: ['major'] }).map((f) => f.id)).toEqual(['blocking']);
   });
 });

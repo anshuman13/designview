@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { setUi, useStore } from '../store';
+import { getJson, postJson, setUi, useRev, useStore } from '../store';
 import { CHECKS } from '../setupChecks';
 import { Icon } from '../Icon';
 import { Markdown } from './Chat';
@@ -7,6 +7,8 @@ import { FileIcon } from './Explorer';
 import { insertPrompt, showNode } from './Files';
 import { useThumbs } from '../useThumbs';
 import { buildTranscript, duration, firstLine, groupTurns, relPath, stepLabel, type Block, type Item, type ToolResult, type ToolUse } from './steps';
+import { areaRows, canGoDeeper, runLabel, summarize, unposted } from './reviewRuns';
+import type { ReviewDoc } from '../../../shared/design';
 import type { ChatEvent } from '../../../shared/protocol';
 import '../transcript.css';
 
@@ -141,6 +143,8 @@ function Row({ it, cwd, thumb }: { it: Item; cwd: string; thumb: (id: string) =>
           )}
         </div>
       );
+    case 'review':
+      return <ReviewCard runAt={it.runAt} />;
     case 'note':
       return <div className="tr-note tr-act"><span className="tr-mark"><i className="tr-dot" /></span><span className="tr-text" title={it.text}>{it.text}</span></div>;
   }
@@ -202,6 +206,55 @@ function AgentRow({ use, result }: { use: ToolUse; result?: ToolResult }) {
         {!result && <Icon name="loading" small spin />}
       </span>
       {open && result && <div className="tr-detail" onClick={(e) => e.stopPropagation()}><div className="tr-report"><Markdown text={result.text || '(no output)'} /></div></div>}
+    </div>
+  );
+}
+
+function ReviewCard({ runAt }: { runAt: number }) {
+  const chat = useStore((s) => s.session.id);
+  const hasFile = useStore((s) => !!s.session.figma);
+  const rev = useRev('review.json');
+  const [doc, setDoc] = useState<ReviewDoc | null>(null);
+  const [posting, setPosting] = useState(false);
+  const [note, setNote] = useState('');
+  useEffect(() => { getJson<ReviewDoc>('/api/review').then(setDoc).catch(() => {}); }, [chat, rev]);
+  const run = doc?.runs.find((r) => r.at === runAt);
+  if (!doc || !run) return <div className="tr-system">Review finished</div>;
+  const pending = unposted(run, doc);
+  const post = async () => {
+    setPosting(true);
+    try {
+      const r = await postJson<{ posted: number }>('/api/review/post', { ids: pending.map((f) => f.id) });
+      setNote(`Posted ${r.posted} comments in Figma`);
+      setDoc(await getJson<ReviewDoc>('/api/review'));
+    } catch (e) {
+      setNote((e as Error).message);
+    } finally {
+      setPosting(false);
+    }
+  };
+  return (
+    <div className="tr-review">
+      <div className="tr-review-head">
+        <b>{runLabel(run)}</b>
+        <span className="tr-review-sum">{summarize({ kind: run.kind === 'audit' ? 'audit' : 'review', id: run.id, at: run.at, tokens: run.tokens, run })}</span>
+        {run.tokens > 0 && <span className="tr-dur">{Math.round(run.tokens / 1000)}k tokens</span>}
+      </div>
+      <ul className="tr-review-rows">
+        {areaRows(run).map((a) => (
+          <li key={a.name} className={a.pass ? 'pass' : 'fail'}>
+            <Icon name={a.pass ? 'check' : 'close'} small />
+            <span>{a.name}</span>
+            {a.failed && <span className="tr-review-failed">failed</span>}
+          </li>
+        ))}
+      </ul>
+      <div className="tr-review-actions">
+        <button onClick={() => window.dispatchEvent(new CustomEvent('designview:command', { detail: { id: 'page:review' } }))}>Open Review</button>
+        {hasFile && pending.length > 0 && <button disabled={posting} onClick={post}>Post as Figma comments</button>}
+        {canGoDeeper(run) && <button onClick={() => insertPrompt('/review full')}>Review deeper</button>}
+        {note && <span className="tr-review-note">{note}</span>}
+      </div>
     </div>
   );
 }

@@ -88,6 +88,16 @@ describe('set_status items', () => {
   });
 });
 
+describe('review events', () => {
+  it('maps to a review item that stays outside the steps group', () => {
+    const r = tool('Read', { file_path: '/w/a.ts' });
+    const items = buildTranscript([user('go'), r, result(r.id), { id: 'rv', kind: 'review', at: 5, runAt: 4 }, say('Done')]);
+    expect(items.find((i) => i.kind === 'review')).toEqual({ kind: 'review', id: 'rv', runAt: 4 });
+    const blocks = groupTurns(items)[0].blocks;
+    expect(blocks.map((b) => b.kind)).toEqual(['user', 'review', 'steps', 'assistant']);
+  });
+});
+
 describe('groupTurns', () => {
   it('puts the tools and earlier replies of a turn in one group before the last reply', () => {
     const r = tool('Read', { file_path: '/w/app/a.ts' });

@@ -32,7 +32,8 @@ export type ChatEvent =
   | { id: string; kind: 'result'; text: string; costUsd: number; isError: boolean; at: number }
   | { id: string; kind: 'system'; text: string; at: number }
   | { id: string; kind: 'status'; text: string; at: number }
-  | { id: string; kind: 'plan'; next: string[]; at: number };
+  | { id: string; kind: 'plan'; next: string[]; at: number }
+  | { id: string; kind: 'review'; at: number; runAt: number };
 
 export type SpendPart = { tokens: number; costUsd: number };
 export type Spend = SpendPart & { byPhase: Record<string, SpendPart>; byModel: Record<string, SpendPart> };

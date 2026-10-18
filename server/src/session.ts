@@ -7,15 +7,14 @@ import { AREAS, FLOW_ACTIVE, FLOW_MODES, MODELS, PRESETS, PRESET_INFO, flowOff, 
 import { Approvals } from './approvals.js';
 import { STATUS_REMINDER, agentOptions, userMessage } from './options.js';
 import { mcpFrom } from './mcp.js';
-import { advisorEvent, cacheFrom, contextFrom, historyFrom, toolResultText, toolUseEvent } from './transcript.js';
+import { advisorEvent, cacheFrom, contextFrom, historyFrom, toolResultText, toolUseEvent, withReviews } from './transcript.js';
 import { CHECKPOINT, afterFix, afterReview, designFilePrompt, designPrompt, fixPrompt, parseCommand, planPrompt, sketchFixPrompt, sketchPrompt } from './flow.js';
 import { FIGMA_WRITE, figmaMcp, isFigmaTool } from './lean.js';
 import { boardNotes, readSketch, renderAll } from './sketch.js';
 import { buildProfile, readProfile } from './profile.js';
 import { parseTone, runCopy, runCrit } from './crit.js';
 import { parseBuildArg, runBuildCheck } from './buildcheck.js';
-import { failedAreas, readDesign, runReview, toFix } from './review.js';
-import { checkSummary } from './check.js';
+import { failedAreas, readDesign, readReview, runReview, toFix } from './review.js';
 import { settings } from './settings.js';
 import { loadImages, withRefs, type Images } from './attach.js';
 import { readRules, rulesBlock } from './rules.js';
@@ -130,9 +129,12 @@ export class AgentSession {
   }
 
   async loadHistory() {
-    if (!this.resume) return;
+    if (!this.resume) {
+      if (this.figma?.key === SAMPLE_KEY) this.state.events.push(...withReviews([], (await readReview(this.cwd)).runs));
+      return;
+    }
     const { events, context, cache } = historyFrom(await getSessionMessages(this.resume, { dir: this.cwd }));
-    this.state.events.push(...events);
+    this.state.events.push(...withReviews(events, (await readReview(this.cwd)).runs));
     Object.assign(this.state.session, { context, cache });
   }
 
@@ -387,7 +389,7 @@ export class AgentSession {
       if (!frames.length) return this.system('Audit: the file has no top-level frames');
       const run = await runReview({ dir: this.cwd, fileKey: this.figma!.key, frames, preset: 'check', areas: [], round: 0, kind: 'audit' });
       this.recordBackground('review', run);
-      this.system(`Audit done: ${run.check.length ? checkSummary(run.check) : 'no issues'} across ${frames.length} frames. See the Review tab.`);
+      this.reviewDone(run);
     });
     if (cmd === 'buildcheck') {
       const parsed = parseBuildArg(arg);
@@ -424,7 +426,7 @@ export class AgentSession {
     return this.background(`Reviewing ${frames.length} ${frames.length === 1 ? 'frame' : 'frames'} (${PRESET_INFO[preset].label})`, async (signal) => {
       const run = await runReview({ dir: this.cwd, fileKey: this.figma!.key, frames, preset, areas: this.state.session.flow.areas, round: 1, kind: 'review', signal, onProgress: (t) => this.setStatus(t) });
       this.recordBackground('review', run);
-      this.reviewNote(run);
+      this.reviewDone(run);
     });
   }
 
@@ -443,14 +445,8 @@ export class AgentSession {
     }
   }
 
-  private reviewNote(run: ReviewRun) {
-    const findings = run.results.flatMap((r) => r.findings);
-    const parts = [
-      run.checkError ? `check failed (${run.checkError})` : `check: ${run.check.length ? checkSummary(run.check) : 'clean'}`,
-      run.results.length ? `${run.results.filter((r) => r.pass).length} of ${run.results.length} reviewers passed, ${findings.length} findings` : '',
-      run.tokens ? `${Math.round(run.tokens / 1000)}k tokens` : 'no model tokens',
-    ].filter(Boolean);
-    this.system(`Review ${PRESET_INFO[run.preset].label}: ${parts.join(' · ')}. See the Review tab.`);
+  private reviewDone(run: ReviewRun) {
+    this.pushEvent({ id: randomUUID(), kind: 'review', at: Date.now(), runAt: run.at });
   }
 
   private async startFlow(task: string, kind: FlowKind) {
@@ -589,7 +585,7 @@ export class AgentSession {
     this.lastRun = done;
     this.addTokens(done.tokens);
     this.recordBackground('review', done);
-    this.reviewNote(done);
+    this.reviewDone(done);
     const pending = toFix(done);
     if (kind === 'verify') return this.finish(pending.length);
     const next = afterReview(preset, this.fixesDone, pending);

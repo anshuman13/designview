@@ -6,7 +6,7 @@ import { showNode, insertPrompt } from './Files';
 import { Empty, ReviewArt } from './Empty';
 import { CopyDetail, CritDetail } from './Crit';
 import { BuildCheck } from './BuildCheck';
-import { KIND_LABEL, ago, mergeRuns, shownPreset, summarize, type RunRow } from './reviewRuns';
+import { KIND_LABEL, ago, mergeRuns, runLabel, shownPreset, summarize, unposted, type RunRow } from './reviewRuns';
 
 const SEV: Record<Finding['severity'], string> = { blocking: 'Blocking', major: 'Major', minor: 'Minor' };
 const k = (n: number) => (n >= 1000 ? `${Math.round(n / 1000)}k` : String(n));
@@ -83,12 +83,12 @@ function RunDetail({ row, doc, onDoc }: { row: RunRow; doc: ReviewDoc; onDoc: (d
 function ReviewDetail({ run, doc, onDoc }: { run: ReviewRun; doc: ReviewDoc; onDoc: (d: ReviewDoc) => void }) {
   const [posting, setPosting] = useState(false);
   const [note, setNote] = useState('');
-  const unposted = [...run.check, ...run.results.flatMap((r) => r.findings)].filter((f) => !doc.posted?.includes(f.id) && f.severity !== 'minor');
+  const pending = unposted(run, doc);
 
   const post = async () => {
     setPosting(true);
     try {
-      const r = await postJson<{ posted: number }>('/api/review/post', { ids: unposted.map((f) => f.id) });
+      const r = await postJson<{ posted: number }>('/api/review/post', { ids: pending.map((f) => f.id) });
       setNote(`Posted ${r.posted} comments in Figma`);
       onDoc(await getJson<ReviewDoc>('/api/review'));
     } catch (e) {
@@ -101,9 +101,9 @@ function ReviewDetail({ run, doc, onDoc }: { run: ReviewRun; doc: ReviewDoc; onD
   return (
     <>
       <div className="review-summary">
-        <div><b>{run.kind === 'audit' ? 'File audit' : run.kind === 'verify' ? 'Final check' : `Review ${run.round} · ${PRESET_INFO[run.preset].label}`}</b> · {when(run.at)} · {run.frames.length} frames</div>
+        <div><b>{runLabel(run)}</b> · {when(run.at)} · {run.frames.length} frames</div>
         <div className="muted">{run.tokens ? `${k(run.tokens)} tokens · $${run.costUsd.toFixed(2)}` : 'No model tokens used'}</div>
-        {unposted.length > 0 && <button disabled={posting} onClick={post}><Icon name="comment" small /> Post {unposted.length} as Figma comments</button>}
+        {pending.length > 0 && <button disabled={posting} onClick={post}><Icon name="comment" small /> Post {pending.length} as Figma comments</button>}
         {note && <span className="muted">{note}</span>}
       </div>
       <div className="review-grid">

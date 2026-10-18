@@ -13,7 +13,8 @@ export type Item =
   | { kind: 'file'; id: string; path: string; count: EditCount; uses: ToolUse[]; error?: string }
   | { kind: 'agent'; id: string; use: ToolUse; result?: ToolResult }
   | { kind: 'done'; id: string; text: string; nodes: Array<[string, number]> }
-  | { kind: 'note'; id: string; text: string };
+  | { kind: 'note'; id: string; text: string }
+  | { kind: 'review'; id: string; runAt: number };
 
 export type Block = Item | { kind: 'steps'; id: string; items: Item[]; count: number; ms: number };
 export type Turn = { id: string; blocks: Block[] };
@@ -90,6 +91,7 @@ export function buildTranscript(events: ChatEvent[]): Item[] {
     else if (e.kind === 'user') items.push(e.phase ? { kind: 'phase', id: e.id, text: e.text } : { kind: 'user', id: e.id, text: e.text, at: e.at, stopping: e.stopping });
     else if (e.kind === 'assistant') { if (e.text.trim()) items.push({ kind: 'assistant', id: e.id, text: e.text, streaming: e.streaming }); }
     else if (e.kind === 'system') items.push({ kind: 'system', id: e.id, text: e.text });
+    else if (e.kind === 'review') items.push({ kind: 'review', id: e.id, runAt: e.runAt });
     else if (e.kind === 'plan') items.push({ kind: 'system', id: e.id, text: e.next.length ? `You changed the next steps (${e.next.length})` : 'You cleared the next steps' });
     else if (e.kind === 'tool_use') {
       const result = results.get(e.id);

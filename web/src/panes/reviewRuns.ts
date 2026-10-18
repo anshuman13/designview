@@ -1,4 +1,4 @@
-import type { CopyRun, CritRun, ReviewPreset, ReviewRun } from '../../../shared/design';
+import { AREA_NAMES, PRESET_INFO, type CopyRun, type CritRun, type Finding, type ReviewDoc, type ReviewPreset, type ReviewRun } from '../../../shared/design';
 
 export type RunRow =
   | { kind: 'review' | 'audit'; id: string; at: number; tokens: number; run: ReviewRun }
@@ -36,3 +36,16 @@ export function ago(at: number, now = Date.now()): string {
   for (const [n, unit] of [[86400 * 7, 'w'], [86400, 'd'], [3600, 'h'], [60, 'm']] as const) if (s >= n) return `${Math.floor(s / n)}${unit} ago`;
   return 'just now';
 }
+
+export const runLabel = (run: ReviewRun) => (run.kind === 'audit' ? 'File audit' : run.kind === 'verify' ? 'Final check' : `Review ${run.round} · ${PRESET_INFO[run.preset].label}`);
+
+export const unposted = (run: ReviewRun, doc: ReviewDoc): Finding[] => [...run.check, ...run.results.flatMap((r) => r.findings)].filter((f) => !doc.posted?.includes(f.id) && f.severity !== 'minor');
+
+export function areaRows(run: ReviewRun): Array<{ name: string; pass: boolean; failed: boolean }> {
+  return [
+    { name: 'Design system check', pass: !run.checkError && !run.check.some((f) => f.severity !== 'minor'), failed: !!run.checkError },
+    ...run.results.map((r) => ({ name: r.area === 'all' ? 'All areas' : AREA_NAMES[r.area], pass: r.pass, failed: !!r.error })),
+  ];
+}
+
+export const canGoDeeper = (run: ReviewRun) => run.preset === 'quick' || run.preset === 'check';

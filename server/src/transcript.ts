@@ -52,6 +52,15 @@ export function historyFrom(msgs: SessionMessage[]) {
   return { events, context, cache };
 }
 
+export function withReviews(events: ChatEvent[], runs: Array<{ at: number }>): ChatEvent[] {
+  const out = [...events];
+  for (const run of runs) {
+    const i = out.findIndex((e) => e.at > run.at);
+    out.splice(i < 0 ? out.length : i, 0, { id: randomUUID(), kind: 'review', at: run.at, runAt: run.at });
+  }
+  return out;
+}
+
 export function advisorEvent(id: string, at: number): ChatEvent {
   return { id, kind: 'tool_use', name: 'Advisor', input: {}, summary: 'Consulted the advisor', at };
 }
