@@ -9,7 +9,7 @@ import { useThumbs } from '../useThumbs';
 import { frameName, splitFrameLinks, useOutline } from '../outline';
 import { buildTranscript, duration, firstLine, groupTurns, relPath, stepLabel, type Block, type Item, type ToolResult, type ToolUse } from './steps';
 import { focusReview } from './reviewFocus';
-import { areaRows, canGoDeeper, isStale, runLabel, summarize, unposted } from './reviewRuns';
+import { areaRows, canGoDeeper, isStale, retryPrompt, runLabel, summarize, unposted } from './reviewRuns';
 import { reviewChecklist, type ReviewDoc } from '../../../shared/design';
 import type { ChatEvent } from '../../../shared/protocol';
 import '../transcript.css';
@@ -281,6 +281,7 @@ function ReviewCard({ runAt }: { runAt: number }) {
         <button onClick={() => window.dispatchEvent(new CustomEvent('designview:command', { detail: { id: 'page:review' } }))}>Open Review</button>
         {hasFindings && <button onClick={copy}>{copied ? 'Copied' : 'Copy as checklist'}</button>}
         {hasFile && pending.length > 0 && <button disabled={posting} onClick={post}>Post as Figma comments</button>}
+        {retryPrompt(run) && <button title="Put this review in the composer to run it again" onClick={() => insertPrompt(retryPrompt(run)!)}>Retry</button>}
         {canGoDeeper(run) && <button onClick={() => insertPrompt('/review full')}>Review deeper</button>}
         {note && <span className="tr-review-note">{note}</span>}
       </div>

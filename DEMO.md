@@ -214,6 +214,9 @@ typed text there. Untested with a real second file so far.
 open the frame. Review cards list the reviewed frames by name under the title (three, then "+n more"). Names come from
 one outline request shared by the whole page and refreshed at most once a minute; without it, ids show instead.
 
+**Retry a failed review.** When a reviewer failed (timeout, tool error), its row says "failed" and the review card gets
+"Retry", which puts `/review <same preset> <same frames>` in the composer for you to send.
+
 ## After the tour: real runs
 
 These spend tokens and need a Figma token, Claude's Figma tools and a file you can edit. Use a scratch file.

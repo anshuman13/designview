@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ago, areaRows, canGoDeeper, isStale, mergeRuns, runLabel, shownPreset, summarize, unposted } from './reviewRuns';
+import { ago, areaRows, canGoDeeper, isStale, mergeRuns, retryPrompt, runLabel, shownPreset, summarize, unposted } from './reviewRuns';
 import type { CopyRun, CritRun, Finding, ReviewRun } from '../../../shared/design';
 
 const finding = (severity: Finding['severity']): Finding => ({ id: severity, area: 'color', severity, rule: 'r', fix: 'f', node: '1:2' }) as Finding;
@@ -82,5 +82,15 @@ describe('isStale', () => {
   });
   it('is false for missing or invalid lastModified', () => {
     for (const v of [null, undefined, '', 'nope']) expect(isStale({ at }, v, at)).toBe(false);
+  });
+});
+
+describe('retryPrompt', () => {
+  it('reruns the same preset on the same frames when a reviewer failed', () => {
+    const run = review('a', 1, { preset: 'full', frames: ['1:2', '3:4'], results: [{ area: 'all', pass: false, summary: '', findings: [], tokens: 0, costUsd: 0, error: 'boom' }] });
+    expect(retryPrompt(run)).toBe('/review full 1:2 3:4');
+  });
+  it('is null when nothing failed', () => {
+    expect(retryPrompt(review('a', 1))).toBeNull();
   });
 });

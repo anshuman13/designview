@@ -50,6 +50,8 @@ export function areaRows(run: ReviewRun): Array<{ key: string; name: string; pas
 
 export const canGoDeeper = (run: ReviewRun) => run.preset === 'quick' || run.preset === 'check';
 
+export const retryPrompt = (run: ReviewRun) => (areaRows(run).some((a) => a.failed) ? `/review ${run.preset} ${run.frames.join(' ')}` : null);
+
 export function isStale(run: Pick<ReviewRun, 'at'>, lastModified: string | null | undefined, latestAt: number): boolean {
   const t = lastModified ? Date.parse(lastModified) : NaN;
   return run.at === latestAt && !Number.isNaN(t) && t > run.at;
