@@ -15,11 +15,16 @@ async function selectedFrames() {
   return `${name ?? focus} (${figmaNodeUrl(figma.key, focus)})`;
 }
 
-export async function runRecipe(recipe: Recipe) {
+export async function recipeText(recipe: Recipe) {
   const frames = recipe.needsFrames ? await selectedFrames() : null;
   if (recipe.id === 'brief') send({ type: 'set_flow', patch: { mode: 'design' } });
+  return recipePrompt(recipe, frames).trimEnd();
+}
+
+export async function runRecipe(recipe: Recipe) {
+  const text = await recipeText(recipe);
   window.dispatchEvent(new CustomEvent('designview:command', { detail: { id: 'tab:chat' } }));
-  insertPrompt(recipePrompt(recipe, frames).trimEnd());
+  insertPrompt(text);
 }
 
 let custom: CustomRecipe[] = [];

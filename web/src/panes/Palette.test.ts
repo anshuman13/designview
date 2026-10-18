@@ -6,7 +6,7 @@ const ids = (rows: ReturnType<typeof rankCommands>) => rows.map((r) => r.cmd.id)
 
 describe('buildCommands', () => {
   it('lists views, center tabs and design commands', () => {
-    expect(ids(rankCommands(cmds, '', [], 100))).toEqual(expect.arrayContaining(['view:files', 'view:system', 'page:sketch', 'page:review', 'page:settings', 'repo', 'design', 'review', 'audit', 'system', 'compact', 'stop', 'notify', 'phone', 'shortcuts', 'focus', 'recipe:brief', 'recipe:audit', 'recipe:comments']));
+    expect(ids(rankCommands(cmds, '', [], 100))).toEqual(expect.arrayContaining(['view:files', 'view:system', 'page:sketch', 'page:review', 'page:settings', 'repo', 'design', 'review', 'audit', 'system', 'compact', 'stop', 'notify', 'phone', 'shortcuts', 'focus', 'recipe:brief', 'recipe:handoff']));
     expect(cmds.map((c) => c.label)).toContain('Recipe: Design from a brief');
   });
 });
@@ -54,7 +54,7 @@ describe('rankCommands', () => {
   it('filters by the query and sorts the best match first', () => {
     const rows = rankCommands(cmds, 'sketch', []);
     expect(ids(rows)[0]).toBe('page:sketch');
-    expect(ids(rankCommands(cmds, 'audit', [])).sort()).toEqual(['audit', 'recipe:audit']);
+    expect(ids(rankCommands(cmds, 'audit', [])).sort()).toEqual(['audit']);
   });
 
   it('keeps recent matches ahead of other matches', () => {

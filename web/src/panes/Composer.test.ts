@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { accept, figmaLinkIn, nextMode, buildHistory, contextPercent, filesEdited, ghostFor, rankCommands, rankFiles, remember, triggerAt } from './Composer';
+import { accept, figmaLinkIn, nextMode, buildHistory, contextPercent, filesEdited, ghostFor, rankCommands, rankFiles, recipeSlug, remember, triggerAt, withRecipes } from './Composer';
+import { RECIPES, toRecipe } from '../../../shared/recipes';
 import type { ChatEvent } from '../../../shared/protocol';
 
 let n = 0;
@@ -139,5 +140,41 @@ describe('figmaLinkIn', () => {
     expect(figmaLinkIn('make a card')).toBeNull();
     expect(figmaLinkIn('https://example.com/design/AbC1234567')).toBeNull();
     expect(figmaLinkIn('https://www.figma.com/community/file/123')).toBeNull();
+  });
+});
+
+describe('withRecipes', () => {
+  const server = [{ name: 'design', description: 'Plan' }, { name: 'crit', description: 'Server crit' }, { name: 'copy', description: 'Server copy' }, { name: 'audit', description: 'Audit' }];
+  const names = (l: { name: string }[]) => l.map((c) => c.name);
+
+  it('lists the six recipes and keeps one entry for names a server command shares', () => {
+    const list = withRecipes(server, RECIPES, []);
+    expect(names(list)).toEqual(['brief', 'states', 'responsive', 'copy', 'crit', 'handoff', 'design', 'audit']);
+    expect(list.find((c) => c.name === 'crit')).toMatchObject({ description: RECIPES.find((r) => r.id === 'crit')!.blurb, recipe: { id: 'crit' } });
+  });
+
+  it('adds custom recipes under the slug of the title', () => {
+    const custom = [toRecipe({ id: 'c1', title: 'Hero Check!', blurb: '', prompt: 'Check {frames}', group: 'make' })];
+    const list = withRecipes(server, RECIPES, custom);
+    expect(list.find((c) => c.name === 'hero-check')).toMatchObject({ description: 'Hero Check!', recipe: { id: 'c1' } });
+  });
+
+  it('skips custom recipes that repeat a name or have no slug', () => {
+    const custom = [
+      toRecipe({ id: 'c1', title: 'Brief', blurb: 'x', prompt: 'x', group: 'make' }),
+      toRecipe({ id: 'c2', title: '!!!', blurb: 'x', prompt: 'x', group: 'make' }),
+    ];
+    expect(names(withRecipes([], RECIPES, custom))).toEqual(names(withRecipes([], RECIPES, [])));
+  });
+
+  it('ranks recipes by query', () => {
+    const r = rankCommands(withRecipes(server, RECIPES, []), 'resp');
+    expect(r[0].item.name).toBe('responsive');
+  });
+});
+
+describe('recipeSlug', () => {
+  it('hyphenates and trims', () => {
+    expect(recipeSlug('  My  Recipe: v2 ')).toBe('my-recipe-v2');
   });
 });

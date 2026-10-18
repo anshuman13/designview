@@ -241,6 +241,15 @@ Settings (gear) opens as an overlay; Escape closes it.
 
 Try: New chat shows only the conversation. Open the Sample tour to see Figma, Sketch and Review tabs.
 
+## 28. Six recipes as slash commands
+
+The recipe catalog is down to six: /brief (switches to Design mode), /states, /responsive, /crit, /copy
+and /handoff. Type / in the composer to see them first in the list; Tab or Enter expands the recipe into
+its full prompt, filled with the frame selected in Files. Your own recipes show up as /their-name too, and
+stay editable from the palette.
+
+Try: type /sta and press Tab. Clear the text afterwards.
+
 ## Open questions for you
 
 - "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a

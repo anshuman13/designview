@@ -6,6 +6,8 @@ import { FileIcon } from './Explorer';
 import { match } from './FileSwitcher';
 import { COMPACT_AT, type ChatEvent } from '../../../shared/protocol';
 import { FLOW_MODES, PRESET_INFO, type FlowMode } from '../../../shared/design';
+import { recipeText, useCustomRecipes } from '../recipes';
+import { RECIPES, toRecipe, type Recipe } from '../../../shared/recipes';
 import { imageProblem, imagesIn } from './attach';
 import '../composer.css';
 
@@ -22,6 +24,7 @@ export const MODE_INFO: Record<FlowMode, { label: string; detail: string; placeh
 export const nextMode = (m: FlowMode): FlowMode => FLOW_MODES[(FLOW_MODES.indexOf(m) + 1) % FLOW_MODES.length];
 
 export const MAX_ROWS = 8;
+const MAX_COMMANDS = 30;
 export const MAX_STORED = 50;
 const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
 
@@ -45,6 +48,20 @@ function rank<T>(items: T[], key: (t: T) => string, query: string, limit: number
 export const rankCommands = <T extends { name: string }>(commands: T[], query: string, limit = MAX_ROWS) => rank(commands, (c) => c.name, query, limit);
 
 export const rankFiles = (files: string[], query: string, limit = MAX_ROWS) => rank(files, (f) => f, query, limit);
+
+export type SlashCommand = { name: string; description: string; recipe?: Recipe };
+
+export const recipeSlug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+export function withRecipes(commands: { name: string; description: string }[], builtin: Recipe[], custom: Recipe[]): SlashCommand[] {
+  const recipes: SlashCommand[] = [];
+  const add = (r: Recipe, name: string) => {
+    if (name && !recipes.some((x) => x.name === name)) recipes.push({ name, description: r.blurb || r.title, recipe: r });
+  };
+  builtin.forEach((r) => add(r, r.id));
+  custom.forEach((r) => add(r, recipeSlug(r.title)));
+  return [...recipes, ...commands.filter((c) => !recipes.some((r) => r.name === c.name))];
+}
 
 export function figmaLinkIn(text: string): { url: string; key: string; name: string } | null {
   const m = /https?:\/\/(?:[\w-]+\.)?figma\.com\/(?:design|file|proto)\/([A-Za-z0-9]{10,})(?:\/([^\s/?#]+))?[^\s]*/.exec(text);
@@ -125,12 +142,14 @@ export function Composer() {
   const running = useStore((s) => s.session.running);
   const stopping = useStore((s) => s.session.stopping);
   const waiting = useStore((s) => s.pending.length > 0);
-  const commands = useStore((s) => s.session.commands);
+  const serverCommands = useStore((s) => s.session.commands);
+  const customRecipes = useCustomRecipes();
   const flow = useStore((s) => s.session.flow);
   const context = useStore((s) => s.session.context);
   const events = useStore((s) => s.events);
   const hasFile = useStore((s) => !!s.session.figma);
 
+  const commands = useMemo(() => withRecipes(serverCommands, RECIPES, customRecipes.map(toRecipe)), [serverCommands, customRecipes]);
   const [modeOpen, setModeOpen] = useState(false);
   const modePop = useRef<HTMLDivElement>(null);
   const [text, setText] = useState('');
@@ -163,7 +182,7 @@ export function Composer() {
   const popKey = trigger && trigger.kind !== 'shell' ? `${trigger.kind}:${trigger.start}:${trigger.query}` : '';
   const items = useMemo(() => {
     if (!trigger || trigger.kind === 'shell' || popKey === dismissed) return [];
-    return trigger.kind === 'command' ? rankCommands(commands, trigger.query) : rankFiles(files, trigger.query);
+    return trigger.kind === 'command' ? rankCommands(commands, trigger.query, MAX_COMMANDS) : rankFiles(files, trigger.query);
   }, [trigger, popKey, dismissed, commands, files]);
   const open = items.length > 0;
   const history = useMemo(() => buildHistory(events, stored), [events, stored]);
@@ -271,9 +290,14 @@ export function Composer() {
 
   const choose = (i: number) => {
     if (!trigger || trigger.kind === 'shell' || !items[i]) return;
-    const value = trigger.kind === 'command' ? `/${(items[i].item as { name: string }).name}` : `@${items[i].item as string}`;
-    const r = accept(text, trigger.start, at, value);
-    apply(r.text, r.caret);
+    const item = items[i].item;
+    const recipe = trigger.kind === 'command' ? (item as SlashCommand).recipe : undefined;
+    const done = (value: string) => {
+      const r = accept(text, trigger.start, at, value);
+      apply(r.text, r.caret);
+    };
+    if (recipe) { void recipeText(recipe).then(done); return; }
+    done(trigger.kind === 'command' ? `/${(item as SlashCommand).name}` : `@${item as string}`);
   };
 
   const stepHistory = (dir: 1 | -1) => {
@@ -311,7 +335,7 @@ export function Composer() {
       if (e.key === 'ArrowDown') { e.preventDefault(); setSel((i) => (i + 1) % items.length); return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); setSel((i) => (i - 1 + items.length) % items.length); return; }
       if (e.key === 'Escape') { e.preventDefault(); setDismissed(popKey); return; }
-      const exact = trigger?.kind === 'command' && (items[sel].item as { name: string }).name === trigger.query;
+      const exact = trigger?.kind === 'command' && !(items[sel].item as SlashCommand).recipe && (items[sel].item as SlashCommand).name === trigger.query;
       if ((e.key === 'Tab' && !e.shiftKey) || (e.key === 'Enter' && !e.shiftKey && !exact)) { e.preventDefault(); choose(sel); return; }
     }
     if (ghost && (e.key === 'Tab' || e.key === 'ArrowRight') && el.selectionStart === text.length) { e.preventDefault(); apply(text + ghost); return; }

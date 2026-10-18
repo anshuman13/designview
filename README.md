@@ -44,27 +44,20 @@ and recipes. The Figma tab shows the Mac's Chrome, so use it on the Mac.
 
 ## Workflows
 
-Recipes live in the command palette as "Recipe: ...". A recipe puts a written prompt in the composer and does not send it, so you can
+Recipes live in the command palette as "Recipe: ..." and as slash commands in the composer. A recipe puts a written prompt in the composer and does not send it, so you can
 edit it first. If a frame is focused in Files, the prompt names it. "Recipe: Save composer text as recipe" saves your
 own prompt (`{frames}` stands for the focused frame) and "Recipe: Edit ..." changes it.
 
-| Group | Recipe | What it does |
+| Recipe | Slash command | What it does |
 | --- | --- | --- |
-| Make | Design from a brief | Plan, sketch, design and review screens from a few lines of text |
-| Make | Sketch directions | Explore two or three low-fidelity directions first |
-| Make | Screenshot to design | Rebuild a pasted screenshot with your components and variables |
-| Make | Flow map | Draw a FigJam diagram of your screens and how they connect |
-| Improve | Missing states | Add empty, loading, error, long content and no permission variants |
-| Improve | Responsive variants | Create 390, 834 and 1440 wide versions with auto layout |
-| Improve | Copy pass | Suggest clearer, shorter, consistent UI text (one Sonnet call) |
-| Improve | Design crit | Feedback from four points of view, no edits (one Sonnet call) |
-| Improve | Audit | Check the file against the design system, no model calls |
-| Improve | Localization stress test | Copy frames with 40% longer text and flag what breaks |
-| Improve | Dark mode pass | Make dark versions using the library variable modes |
-| Ship | Handoff notes | Developer notes with spacing, tokens, props and interactions |
-| Ship | Address comments | Fix open Figma comments that ask for changes and reply on each |
-| Ship | Accessibility notes | Annotate focus order, headings, labels and alt text |
-| Ship | Frame to code | React and CSS for a frame using your tokens, saved to the chat folder |
+| Design from a brief | `/brief` | Switch to Design mode and write the brief |
+| Missing states | `/states` | Add empty, loading, error, long content and no permission variants |
+| Responsive variants | `/responsive` | Create 390, 834 and 1440 wide versions with auto layout |
+| Copy pass | `/copy` | Suggest clearer, shorter, consistent UI text (one Sonnet call) |
+| Design crit | `/crit` | Feedback from four points of view, no edits (one Sonnet call) |
+| Handoff notes | `/handoff` | Developer notes with spacing, tokens, props and interactions |
+
+Typing `/` in the composer lists these along with your own recipes (as `/<title>`). Picking one fills in the prompt.
 
 ## Commands
 
