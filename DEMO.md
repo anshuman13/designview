@@ -180,6 +180,7 @@ read. The idle hint under the composer says "# for frames" when a file is attach
 **Copy review as checklist.** A review card with findings has "Copy as checklist". It copies a Markdown checklist,
 blocking issues first, each line with the layer, the rule, the fix and a link to the node in Figma. Paste it into a
 ticket or a Figma comment. Try it on the review card in the sample tour (the sample has no real file, so no links).
+The same button is in the Review pane, next to "Post as Figma comments" on the selected review run.
 
 **Stale review hint.** When the Figma file was saved after the newest review in a chat, that review card says "File
 changed since this review" with "Check again", which puts `/review check <frame ids>` in the composer (free, no model

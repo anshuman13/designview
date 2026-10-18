@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, getJson, postJson, send, useRev, useStore } from '../store';
 import { Icon } from '../Icon';
-import { AREAS, AREA_NAMES, PRESET_INFO, type Area, type CopyRun, type CritRun, type Finding, type ReviewDoc, type ReviewRun } from '../../../shared/design';
+import { AREAS, AREA_NAMES, PRESET_INFO, type Area, type CopyRun, type CritRun, type Finding, type ReviewDoc, type ReviewRun, reviewChecklist } from '../../../shared/design';
 import { showNode, insertPrompt } from './Files';
 import { Empty, ReviewArt } from './Empty';
 import { CopyDetail, CritDetail } from './Crit';
@@ -82,7 +82,15 @@ function RunDetail({ row, doc, onDoc }: { row: RunRow; doc: ReviewDoc; onDoc: (d
 function ReviewDetail({ run, doc, onDoc }: { run: ReviewRun; doc: ReviewDoc; onDoc: (d: ReviewDoc) => void }) {
   const [posting, setPosting] = useState(false);
   const [note, setNote] = useState('');
+  const [copied, setCopied] = useState(false);
+  const figmaKey = useStore((s) => s.session.figma?.key);
   const pending = unposted(run, doc);
+  const hasFindings = run.check.length + run.results.reduce((n, r) => n + r.findings.length, 0) > 0;
+  const copy = () => {
+    navigator.clipboard.writeText(reviewChecklist(run, figmaKey && figmaKey !== 'sample' ? figmaKey : null)).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   const post = async () => {
     setPosting(true);
@@ -103,6 +111,7 @@ function ReviewDetail({ run, doc, onDoc }: { run: ReviewRun; doc: ReviewDoc; onD
         <div><b>{runLabel(run)}</b> · {when(run.at)} · {run.frames.length} frames</div>
         <div className="muted">{run.tokens ? `${k(run.tokens)} tokens · $${run.costUsd.toFixed(2)}` : 'No tokens used'}</div>
         {pending.length > 0 && <button disabled={posting} onClick={post}><Icon name="comment" small /> Post {pending.length} as Figma comments</button>}
+        {hasFindings && <button onClick={copy}><Icon name="copy" small /> {copied ? 'Copied' : 'Copy as checklist'}</button>}
         {note && <span className="muted">{note}</span>}
       </div>
       <div className="review-grid">
