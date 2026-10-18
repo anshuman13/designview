@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accept, buildHistory, contextPercent, filesEdited, ghostFor, rankCommands, rankFiles, remember, triggerAt } from './Composer';
+import { accept, nextMode, buildHistory, contextPercent, filesEdited, ghostFor, rankCommands, rankFiles, remember, triggerAt } from './Composer';
 import type { ChatEvent } from '../../../shared/protocol';
 
 let n = 0;
@@ -115,5 +115,13 @@ describe('contextPercent', () => {
     expect(contextPercent(null)).toBeNull();
     expect(contextPercent(100_000)).toBe(50);
     expect(contextPercent(287_000)).toBe(100);
+  });
+});
+
+describe('nextMode', () => {
+  it('cycles chat, design, review, chat', () => {
+    expect(nextMode('chat')).toBe('design');
+    expect(nextMode('design')).toBe('review');
+    expect(nextMode('review')).toBe('chat');
   });
 });

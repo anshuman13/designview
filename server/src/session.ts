@@ -3,7 +3,7 @@ import path from 'node:path';
 import { writeFile } from 'node:fs/promises';
 import { query, getSessionMessages, type Query, type SDKMessage, type SDKUserMessage, type PermissionMode, type HookInput, type HookJSONOutput, type PermissionResult } from '@anthropic-ai/claude-agent-sdk';
 import { COMPACT_AT, type ChatEvent, type ServerMessage, type ServerState, type SessionInfo, type SpendPart } from '../../shared/protocol.js';
-import { AREAS, FLOW_ACTIVE, MODELS, PRESETS, PRESET_INFO, flowOff, nodeIdsIn, type Area, type FigmaFile, type FlowKind, type FlowPhase, type FlowState, type ReviewPreset, type ReviewRun } from '../../shared/design.js';
+import { AREAS, FLOW_ACTIVE, FLOW_MODES, MODELS, PRESETS, PRESET_INFO, flowOff, nodeIdsIn, type Area, type FigmaFile, type FlowKind, type FlowPhase, type FlowState, type ReviewPreset, type ReviewRun } from '../../shared/design.js';
 import { Approvals } from './approvals.js';
 import { STATUS_REMINDER, agentOptions, userMessage } from './options.js';
 import { mcpFrom } from './mcp.js';
@@ -325,7 +325,11 @@ export class AgentSession {
     this.askBeforeEdit = st.askBeforeEdit;
     const cmd = parseCommand(text);
     if (cmd && !this.state.session.running) return this.command(cmd.cmd, cmd.arg, text);
-    if (this.state.session.flow.on && !this.state.session.running && !text.trim().startsWith('/') && this.state.session.flow.phase !== 'pick') return this.startFlow(withRefs(text, images.refs), 'design');
+    const { mode, phase } = this.state.session.flow;
+    if (mode !== 'chat' && !this.state.session.running && !text.trim().startsWith('/') && phase !== 'pick') {
+      if (mode === 'design') return this.startFlow(withRefs(text, images.refs), 'design');
+      return this.command('review', text.trim(), text.trim());
+    }
     this.sendPrompt(text, images);
   }
 
@@ -338,9 +342,9 @@ export class AgentSession {
     this.setSession({ flow: { ...this.state.session.flow, ...patch } });
   }
 
-  updateFlow(patch: Partial<Pick<FlowState, 'on' | 'preset' | 'areas' | 'stopAfterSketch'>>) {
+  updateFlow(patch: Partial<Pick<FlowState, 'mode' | 'preset' | 'areas' | 'stopAfterSketch'>>) {
     const next: Partial<FlowState> = {};
-    if (typeof patch.on === 'boolean') next.on = patch.on;
+    if (patch.mode && FLOW_MODES.includes(patch.mode)) next.mode = patch.mode;
     if (patch.preset && PRESETS.includes(patch.preset)) next.preset = patch.preset;
     if (Array.isArray(patch.areas)) next.areas = AREAS.filter((a) => patch.areas!.includes(a));
     if (typeof patch.stopAfterSketch === 'boolean') next.stopAfterSketch = patch.stopAfterSketch;
@@ -476,7 +480,7 @@ export class AgentSession {
 
   private endFlow(phase: 'done' | 'stopped', note: string) {
     this.work?.abort();
-    this.setFlow({ phase, on: false });
+    this.setFlow({ phase });
     this.system(note);
     if (this.state.session.model !== MODELS.work) void this.setModel(MODELS.work);
     if (this.state.session.permissionMode === 'plan') void this.setPermissionMode('auto', true);

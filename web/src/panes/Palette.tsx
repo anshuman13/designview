@@ -112,7 +112,7 @@ function perform(id: string) {
     setTimeout(() => window.dispatchEvent(new CustomEvent('designview:recipe-new', { detail: text })), 100);
   }
   if (id === 'compact') send({ type: 'prompt', text: '/compact' });
-  else if (id === 'design') send({ type: 'set_flow', patch: { on: !getState().session.flow.on } });
+  else if (id === 'design') send({ type: 'set_flow', patch: { mode: getState().session.flow.mode === 'design' ? 'chat' : 'design' } });
   else if (id === 'review') send({ type: 'prompt', text: '/review' });
   else if (id === 'audit') send({ type: 'prompt', text: '/audit' });
   else if (id === 'system') send({ type: 'prompt', text: '/system' });

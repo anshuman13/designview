@@ -186,6 +186,15 @@ description. Escape clears it.
 
 Try: Home, type "frame" or "copy".
 
+## 22. Modes: Chat, Design, Review
+
+A plain message is now a normal chat with Claude. The pill at the left of the composer picks the mode:
+Chat (default), Design (Opus plans, then sketch, design and review) or Review (reviewers check the frames,
+no edits). Shift+Tab in the composer cycles modes. Design mode has a coral ring and its options (stop
+after sketch, review depth) live in the pill menu.
+
+Try: click the Chat pill, pick Design, open the menu again to see the options. Shift+Tab back to Chat.
+
 ## Open questions for you
 
 - "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a

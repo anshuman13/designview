@@ -25,8 +25,11 @@ export const MODELS = { plan: 'claude-opus-5-5', work: 'claude-sonnet-5-5' } as 
 export type FlowPhase = 'plan' | 'sketch' | 'pick' | 'system' | 'design' | 'review' | 'fix' | 'done' | 'stopped';
 export type FlowKind = 'design' | 'sketch';
 
+export const FLOW_MODES = ['chat', 'design', 'review'] as const;
+export type FlowMode = (typeof FLOW_MODES)[number];
+
 export type FlowState = {
-  on: boolean;
+  mode: FlowMode;
   kind: FlowKind;
   phase: FlowPhase | null;
   round: number;
@@ -125,7 +128,7 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export const flowOff = (s: Pick<Settings, 'preset' | 'areas' | 'stopAfterSketch'> = DEFAULT_SETTINGS): FlowState => ({
-  on: true,
+  mode: 'chat',
   kind: 'design',
   phase: null,
   round: 0,

@@ -11,6 +11,51 @@ function fakeSession() {
   return { s, interrupt, result };
 }
 
+describe('AgentSession modes', () => {
+  const spy = (s: AgentSession) => {
+    const priv = s as unknown as { startFlow: (t: string, k: string) => Promise<void>; command: (c: string, a: string, r: string) => Promise<void> };
+    const startFlow = vi.spyOn(priv, 'startFlow').mockResolvedValue();
+    const command = vi.spyOn(priv, 'command').mockResolvedValue();
+    return { startFlow, command };
+  };
+
+  it('defaults to chat and a plain prompt does not start a flow', async () => {
+    const { s } = fakeSession();
+    const { startFlow, command } = spy(s);
+    expect(s.state.session.flow.mode).toBe('chat');
+    await s.prompt('make a card');
+    expect(startFlow).not.toHaveBeenCalled();
+    expect(command).not.toHaveBeenCalled();
+    expect(s.state.session.running).toBe(true);
+    expect(s.state.events.filter((e) => e.kind === 'user').at(-1)).toMatchObject({ text: 'make a card' });
+  });
+
+  it('starts a flow for a plain prompt in design mode', async () => {
+    const { s } = fakeSession();
+    const { startFlow } = spy(s);
+    s.updateFlow({ mode: 'design' });
+    await s.prompt('a checkout flow');
+    expect(startFlow).toHaveBeenCalledWith(expect.stringContaining('a checkout flow'), 'design');
+  });
+
+  it('runs the review path in review mode and keeps slash commands working', async () => {
+    const { s } = fakeSession();
+    const { startFlow, command } = spy(s);
+    s.updateFlow({ mode: 'review' });
+    await s.prompt('check spacing 1:2');
+    expect(command).toHaveBeenCalledWith('review', 'check spacing 1:2', 'check spacing 1:2');
+    expect(startFlow).not.toHaveBeenCalled();
+    await s.prompt('/audit');
+    expect(command).toHaveBeenLastCalledWith('audit', '', '/audit');
+  });
+
+  it('ignores unknown modes', () => {
+    const { s } = fakeSession();
+    s.updateFlow({ mode: 'bogus' as never });
+    expect(s.state.session.flow.mode).toBe('chat');
+  });
+});
+
 describe('AgentSession turns', () => {
   it('stops running when the only turn ends', () => {
     const { s, result } = fakeSession();

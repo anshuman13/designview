@@ -2,17 +2,24 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode }
 import { api, notice, send, steer, useStore } from '../store';
 import { Icon } from '../Icon';
 import { Voice, useDictation } from './Voice';
-import { QuickPick } from '../QuickPick';
 import { FileIcon } from './Explorer';
 import { match } from './FileSwitcher';
 import { COMPACT_AT, type ChatEvent } from '../../../shared/protocol';
-import { AREA_NAMES, PRESETS, PRESET_INFO } from '../../../shared/design';
+import { FLOW_MODES, PRESET_INFO, type FlowMode } from '../../../shared/design';
 import { imageProblem, imagesIn } from './attach';
 import '../composer.css';
 
 export type Trigger = { kind: 'command' | 'file'; start: number; query: string } | { kind: 'shell' } | null;
 
 export type Ranked<T> = { item: T; hits: number[]; score: number };
+
+export const MODE_INFO: Record<FlowMode, { label: string; detail: string; placeholder: string; icon: string }> = {
+  chat: { label: 'Chat', detail: 'Talk to Claude. Edits Figma when you ask.', placeholder: 'Ask Claude anything, or paste a Figma link', icon: 'comment' },
+  design: { label: 'Design', detail: 'Opus plans, then Claude sketches, designs and reviews.', placeholder: 'Describe the screens you need. Opus plans, then Claude sketches, designs and reviews.', icon: 'sparkle' },
+  review: { label: 'Review', detail: 'Reviewers check the frames. No edits.', placeholder: 'What should the reviewers look at?', icon: 'checklist' },
+};
+
+export const nextMode = (m: FlowMode): FlowMode => FLOW_MODES[(FLOW_MODES.indexOf(m) + 1) % FLOW_MODES.length];
 
 export const MAX_ROWS = 8;
 export const MAX_STORED = 50;
@@ -116,7 +123,8 @@ export function Composer() {
   const context = useStore((s) => s.session.context);
   const events = useStore((s) => s.events);
 
-  const [pick, setPick] = useState<{ kind: 'preset'; at: DOMRect } | null>(null);
+  const [modeOpen, setModeOpen] = useState(false);
+  const modePop = useRef<HTMLDivElement>(null);
   const [text, setText] = useState('');
   const [caret, setCaret] = useState(0);
   const [sel, setSel] = useState(0);
@@ -153,7 +161,7 @@ export function Composer() {
   const ghost = !open && !shell && at === text.length ? ghostFor(text, history) : '';
   const edited = useMemo(() => filesEdited(events), [events]);
   const pct = contextPercent(context);
-  const preset = PRESET_INFO[flow.preset];
+  const setMode = (mode: FlowMode) => send({ type: 'set_flow', patch: { mode } });
 
   useEffect(() => {
     const onInsert = (e: Event) => {
@@ -173,6 +181,15 @@ export function Composer() {
   }, [trigger?.kind, cwd]);
 
   useEffect(() => setSel(0), [popKey]);
+
+  useEffect(() => {
+    if (!modeOpen) return;
+    const down = (e: MouseEvent) => { if (!(e.target as Element).closest('.cp-mode')) setModeOpen(false); };
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') { setModeOpen(false); ta.current?.focus(); } };
+    document.addEventListener('mousedown', down);
+    document.addEventListener('keydown', key);
+    return () => { document.removeEventListener('mousedown', down); document.removeEventListener('keydown', key); };
+  }, [modeOpen]);
 
   useEffect(() => {
     pop.current?.children[sel]?.scrollIntoView({ block: 'nearest' });
@@ -290,15 +307,16 @@ export function Composer() {
     if (ghost && (e.key === 'Tab' || e.key === 'ArrowRight') && el.selectionStart === text.length) { e.preventDefault(); apply(text + ghost); return; }
     if (e.key === 'ArrowUp' && (text === '' || onEntry) && !text.slice(0, el.selectionStart).includes('\n')) { e.preventDefault(); stepHistory(1); return; }
     if (e.key === 'ArrowDown' && onEntry && !text.slice(el.selectionEnd).includes('\n')) { e.preventDefault(); stepHistory(-1); return; }
+    if (e.key === 'Tab' && e.shiftKey) { e.preventDefault(); setMode(nextMode(flow.mode)); return; }
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
   };
 
   const hint = shell ? 'Runs in the terminal' : stopping ? 'Stopping…' : !text && !running ? '/ for commands like /design, /review, /audit' : '';
-  const placeholder = waiting ? 'Answer below, or steer Claude' : running ? 'Steer Claude: stops the current step and sends this' : flow.on ? 'Describe the screens you need. Claude plans, sketches, designs and reviews' : 'Ask about the file, or ask for a change';
+  const placeholder = waiting ? 'Answer below, or steer Claude' : running ? 'Steer Claude: stops the current step and sends this' : MODE_INFO[flow.mode].placeholder;
   const level = pct === null ? '' : context! >= COMPACT_AT ? 'over' : context! >= COMPACT_AT * 0.75 ? 'near' : '';
 
   return (
-    <div className="cp">
+    <div className="cp" data-mode={flow.mode}>
       <div
         ref={card}
         className={`cp-card${shell ? ' shell' : ''}${drag ? ' drop' : ''}`}
@@ -332,12 +350,32 @@ export function Composer() {
           />
         </div>
         <div className="cp-foot">
-          <button className="cp-pill" title={`Review: ${preset.detail}`} onClick={(e) => setPick({ kind: 'preset', at: e.currentTarget.getBoundingClientRect() })}>
-            <Icon name="checklist" small /><span>Review: {preset.label}</span><Icon name="chevron-down" small />
-          </button>
-          <button className={`cp-pill${flow.stopAfterSketch ? ' on' : ''}`} title={flow.stopAfterSketch ? 'Claude waits for you to pick sketch directions' : 'Claude picks a sketch direction and keeps going'} onClick={() => send({ type: 'set_flow', patch: { stopAfterSketch: !flow.stopAfterSketch } })}>
-            <Icon name={flow.stopAfterSketch ? 'debug-pause' : 'debug-continue'} small /><span>{flow.stopAfterSketch ? 'Stop after sketch' : 'Run through'}</span>
-          </button>
+          <div className="cp-mode">
+            <button className="cp-pill cp-modebtn" aria-haspopup="true" aria-expanded={modeOpen} title="Mode (Shift+Tab to cycle)" onClick={() => setModeOpen((o) => !o)}>
+              <Icon name={MODE_INFO[flow.mode].icon} small /><span>{MODE_INFO[flow.mode].label}</span><Icon name="chevron-down" small />
+            </button>
+            {modeOpen && (
+              <div ref={modePop} className="cp-modepop" role="menu">
+                {FLOW_MODES.map((m) => (
+                  <button key={m} role="menuitemradio" aria-checked={flow.mode === m} className={flow.mode === m ? 'active' : ''} onClick={() => { setMode(m); if (m !== 'design') setModeOpen(false); }}>
+                    <Icon name={MODE_INFO[m].icon} small />
+                    <span className="cp-modetext"><b>{MODE_INFO[m].label}</b><span>{MODE_INFO[m].detail}</span></span>
+                  </button>
+                ))}
+                {flow.mode === 'design' && (
+                  <div className="cp-modeopts">
+                    <label><input type="checkbox" checked={flow.stopAfterSketch} onChange={(e) => send({ type: 'set_flow', patch: { stopAfterSketch: e.target.checked } })} />Stop after sketch</label>
+                    <div className="cp-depth" role="radiogroup" aria-label="Review depth">
+                      <span>Review depth</span>
+                      {(['quick', 'full'] as const).map((p) => (
+                        <button key={p} role="radio" aria-checked={flow.preset === p} className={flow.preset === p ? 'on' : ''} title={PRESET_INFO[p].detail} onClick={() => send({ type: 'set_flow', patch: { preset: p } })}>{PRESET_INFO[p].label}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <span className="cp-spacer" />
           <input ref={picker} type="file" accept="image/*" multiple hidden onChange={(e) => { void attach(imagesIn(e.target.files)); e.target.value = ''; }} />
           <button className="icon-btn" title="Attach images" aria-label="Attach images" onClick={() => picker.current?.click()}><Icon name="file-media" small /></button>
@@ -388,16 +426,6 @@ export function Composer() {
             );
           })}
         </ul>
-      )}
-      {pick?.kind === 'preset' && (
-        <QuickPick
-          anchor={pick.at}
-          title="How much review"
-          current={flow.preset}
-          items={PRESETS.map((p) => ({ value: p, label: PRESET_INFO[p].label, detail: p === 'focused' ? `${PRESET_INFO[p].detail}: ${flow.areas.map((a) => AREA_NAMES[a]).join(', ') || 'none ticked'}` : PRESET_INFO[p].detail }))}
-          onPick={(v) => { send({ type: 'set_flow', patch: { preset: v as (typeof PRESETS)[number] } }); setPick(null); }}
-          onClose={() => setPick(null)}
-        />
       )}
     </div>
   );

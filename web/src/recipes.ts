@@ -17,7 +17,7 @@ async function selectedFrames() {
 
 export async function runRecipe(recipe: Recipe) {
   const frames = recipe.needsFrames ? await selectedFrames() : null;
-  if (recipe.id === 'brief') send({ type: 'set_flow', patch: { on: true } });
+  if (recipe.id === 'brief') send({ type: 'set_flow', patch: { mode: 'design' } });
   window.dispatchEvent(new CustomEvent('designview:command', { detail: { id: 'tab:chat' } }));
   insertPrompt(recipePrompt(recipe, frames).trimEnd());
 }

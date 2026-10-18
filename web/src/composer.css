@@ -1,6 +1,6 @@
 .cp { position: relative; display: flex; flex-direction: column; gap: 4px; width: 100%; --cp-ring: var(--border-strong); }
-.cp[data-mode='plan'] { --cp-ring: var(--accent); }
-.cp[data-mode='acceptEdits'] { --cp-ring: var(--fg-muted); }
+.cp[data-mode='design'] { --cp-ring: var(--accent); }
+.cp[data-mode='review'] { --cp-ring: var(--ok); }
 
 .cp-card {
   position: relative; display: flex; flex-direction: column;
@@ -8,6 +8,8 @@
   transition: border-color 0.12s;
 }
 .cp-card:focus-within { border-color: var(--cp-ring); }
+.cp:not([data-mode='chat']) .cp-card { border-color: color-mix(in srgb, var(--cp-ring) 45%, var(--border)); }
+.cp:not([data-mode='chat']) .cp-card:focus-within { border-color: var(--cp-ring); box-shadow: 0 0 0 1px var(--cp-ring); }
 
 .cp-text { position: relative; }
 .cp-card textarea, .cp-mirror {
@@ -33,7 +35,30 @@
 .cp-pill:hover { background: var(--bg-hover); color: var(--fg); }
 .cp-pill > span { overflow: hidden; text-overflow: ellipsis; }
 .cp-pill .codicon.icon.small { font-size: 13px; }
-.cp[data-mode='plan'] .cp-pill:first-child .codicon:first-child { color: var(--accent); }
+.cp-mode { position: relative; min-width: 0; }
+.cp-modebtn { color: var(--fg); font-weight: 600; }
+.cp[data-mode='design'] .cp-modebtn { color: var(--accent); }
+.cp[data-mode='review'] .cp-modebtn { color: var(--ok); }
+.cp-modepop {
+  position: absolute; z-index: 20; left: 0; bottom: calc(100% + 8px); width: min(340px, calc(100vw - 32px)); padding: 4px;
+  background: var(--bg-raised); border: 1px solid var(--border-strong); border-radius: var(--radius, 8px); box-shadow: var(--shadow-md);
+}
+.cp-modepop > button {
+  width: 100%; display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px; border: 0; border-radius: var(--radius-sm, 4px);
+  background: transparent; color: var(--fg); text-align: left; font-size: var(--text-md);
+}
+.cp-modepop > button:hover { background: var(--bg-hover); }
+.cp-modepop > button.active { background: var(--accent-soft); }
+.cp-modepop > button .codicon { margin-top: 3px; color: var(--fg-muted); }
+.cp-modetext { display: flex; flex-direction: column; min-width: 0; white-space: normal; }
+.cp-modetext > span { color: var(--fg-muted); font-size: var(--text-sm); }
+.cp-modeopts { margin-top: 4px; padding: 8px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; font-size: var(--text-sm); color: var(--fg); }
+.cp-modeopts label { display: flex; align-items: center; gap: 8px; }
+.cp-modeopts input[type='checkbox'] { width: auto; flex: none; margin: 0; }
+.cp-depth { display: flex; align-items: center; gap: 4px; }
+.cp-depth > span { flex: 1; color: var(--fg-muted); }
+.cp-depth button { height: 24px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-sm, 4px); background: transparent; color: var(--fg-muted); font-size: var(--text-sm); }
+.cp-depth button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--fg); }
 .cp-spacer { flex: 1; }
 
 .cp-send, .cp-stop {
@@ -80,6 +105,9 @@
   .cp-send, .cp-stop, .cp-foot .icon-btn.voice { width: 44px; height: 44px; }
   .cp-foot { gap: 2px; padding: 2px 6px 6px; }
   .cp-pop li { height: 44px; }
+  .cp-modepop > button { min-height: 44px; }
+  .cp-modeopts label, .cp-depth button { min-height: 44px; }
+  .cp-depth button { padding: 0 14px; }
   .cp-pop { max-height: min(300px, 45vh); }
   .cp-under { font-size: var(--text-sm); line-height: 18px; }
 }

@@ -133,7 +133,7 @@ export type ClientMessage =
   | { type: 'answer'; id: string; answers: Record<string, string> }
   | { type: 'permission'; id: string; allow: boolean; always?: boolean }
   | { type: 'set_permission_mode'; mode: string }
-  | { type: 'set_flow'; patch: Partial<Pick<FlowState, 'on' | 'preset' | 'areas' | 'stopAfterSketch'>> }
+  | { type: 'set_flow'; patch: Partial<Pick<FlowState, 'mode' | 'preset' | 'areas' | 'stopAfterSketch'>> }
   | { type: 'flow_continue' }
   | { type: 'flow_pick'; screen: string; direction: string }
   | { type: 'interrupt' }

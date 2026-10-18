@@ -1,4 +1,4 @@
-import { send, useStore } from '../store';
+import { useStore } from '../store';
 import { Icon } from '../Icon';
 import { PRESET_INFO, type FlowPhase } from '../../../shared/design';
 
@@ -11,7 +11,6 @@ const STEPS: Array<{ id: string; label: string; phases: FlowPhase[] }> = [
 
 export function FlowBar() {
   const flow = useStore((s) => s.session.flow);
-  const running = useStore((s) => s.session.running);
   const active = flow.phase && !['done', 'stopped'].includes(flow.phase);
   const at = STEPS.findIndex((s) => flow.phase && s.phases.includes(flow.phase));
   const steps = flow.kind === 'sketch' ? STEPS.slice(0, 2) : STEPS;
@@ -33,12 +32,7 @@ export function FlowBar() {
           <span className="waiting">Pick sketch directions, then Continue on the Sketch tab</span>
         ) : active ? (
           <span>{flow.phase === 'fix' ? `Fixing round ${flow.round}` : flow.phase === 'review' ? `Review ${flow.round} · ${PRESET_INFO[flow.preset].label}` : flow.phase === 'system' ? 'Reading the design system' : 'Running'}{flow.tokens ? ` · ${Math.round(flow.tokens / 1000)}k tokens` : ''}</span>
-        ) : (
-          <label className="run-toggle" title="When on, your next message starts a plan, sketch, design, review run">
-            <input type="checkbox" checked={flow.on} disabled={running} onChange={(e) => send({ type: 'set_flow', patch: { on: e.target.checked } })} />
-            Next message starts a design run
-          </label>
-        )}
+        ) : null}
       </div>
     </div>
   );
