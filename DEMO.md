@@ -171,6 +171,14 @@ without spending model tokens. Each row says ok or what is wrong, with a fix but
 
 Try: Settings, Run all checks.
 
+## 20. Open on phone
+
+The phone icon in the top bar shows a QR code for the Tailscale or Wi-Fi address, with a switch between them, and
+how to add DesignView to the home screen. The Android app tab from AgentView is gone (DesignView has no Android
+build).
+
+Try: click the phone icon and scan the code with your phone camera.
+
 ## Open questions for you
 
 - "Next message starts a design run" is on by default, so a plain question in a new chat starts an Opus plan and a
