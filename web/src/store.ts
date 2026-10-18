@@ -51,6 +51,7 @@ export function useStore<T>(selector: (s: State) => T): T {
   return useSyncExternalStore(
     (l) => (listeners.add(l), () => listeners.delete(l)),
     () => selector(state),
+    () => selector(state),
   );
 }
 

@@ -121,3 +121,4 @@
   font: inherit; cursor: pointer; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: baseline;
 }
 .tr-review-frames { color: var(--fg-muted); font-size: var(--text-sm); margin: 2px 0 6px; }
+.md a.frame-chip { text-decoration: none; display: inline-block; vertical-align: bottom; }
